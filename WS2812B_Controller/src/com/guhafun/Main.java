@@ -14,23 +14,9 @@ public class Main {
     public static int baudRate = 0;             //Скорость подключения
     private static int data[] = new int[54];    //Массив получаемых и отправляемых данных
 
-    //Эти переменные соответствуют переменным в коде Арудино - получается, что здесь их локальные копии
-    public static int autoMode = 0;
-    public static int maxBright = 0;
-    public static int ledMode = 0;
-    public static int[] ledModes = new int[49];
-    public static int thisdelay = 0;
-
 
     public static void main(String[] args) {
-      //  SerialPort serialPort = new SerialPort("arduinoPort"); //
-
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new MainFrame();
-            }
-        });
+        SwingUtilities.invokeLater(() -> new MainFrame());
     }
 /***************Открытие порта ******************/
     public static void openPort(String comPort, int bRate) {
@@ -46,7 +32,7 @@ public class Main {
            // serialPort.writeByte((byte)1);
 
         } catch (SerialPortException se) {
-            System.out.println(se);
+            se.printStackTrace();
         }
 
     }
@@ -56,7 +42,7 @@ public class Main {
         try {
             serialPort.writeByte((byte) 1);
         } catch (SerialPortException se) {
-            System.out.println(se);
+            se.printStackTrace();
         }
     }
     /***************Отключение******************/
@@ -65,7 +51,7 @@ public class Main {
             serialPort.closePort();
             isConnected = false;
         } catch (SerialPortException se) {
-            System.out.println(se);
+            se.printStackTrace();
         }
     }
 
@@ -74,7 +60,7 @@ public class Main {
             try {
                 serialPort.writeIntArray(data);
             } catch (SerialPortException se) {
-                System.out.println(se);
+                se.printStackTrace();
             }
         }
 
@@ -98,20 +84,10 @@ public class Main {
 
                 try {
                     data = serialPort.readIntArray();
-
-                        int indx1 = 0;
-                        ledMode = data[1];
-                        maxBright = data[2];
-                        autoMode = data[3];
-                        thisdelay = data[4];
-                        for (int indx2 = 5; indx2 < 54; indx2++) {
-                            ledModes[indx1] = data[indx2];
-                            indx1++;
-                        }
                         isConnected = true;
 
                 } catch (SerialPortException se) {
-                    System.out.println(se);
+                    se.printStackTrace();
                 }
             }
 
@@ -119,13 +95,11 @@ public class Main {
                 System.out.println("Responce has been comed!");
                 try {
                     data = serialPort.readIntArray();
-                   // ledMode = data[1];
-                   // thisdelay = data[2];
                     isRecponceRecived = true;
 
                 }
                 catch (SerialPortException se){
-                    System.out.println(se);
+                    se.printStackTrace();
                 }
 
             }
