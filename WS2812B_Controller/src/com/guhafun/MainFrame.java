@@ -244,6 +244,7 @@ public class MainFrame {
         GridBagConstraints contSettings3 = new GridBagConstraints(GridBagConstraints.RELATIVE, 0, 2, 1, 0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 0, 0, 0), 0, 0);
         GridBagConstraints contSettings4 = new GridBagConstraints(GridBagConstraints.RELATIVE, 1, 2, 1, 0, 0, GridBagConstraints.CENTER, 0, new Insets(-8, 10, 0, 8), 0, 0);
 
+        chkAutoMode.addItemListener(new AutoModeItemListener());
         btColorChooser.setForeground(Color.WHITE);
         btColorChooser.setBackground(Color.BLACK);
 
@@ -395,6 +396,31 @@ public class MainFrame {
         }
     }
 
+    /*********Слушатель для изменения списка режимов*********/
+    private class ModesListItemListener implements ItemListener{
+        //Переменная индекса чекбоса, значения активности режима (1 - добавить в список/активен, 0 - удалить из списка/деактивирован
+        byte index;
+        byte actDeactValue;
+
+        //Конструктор принимает в качестве параметра индекс чекбокса, который вызвал ивент, в зависимости от текущего состояния чекбокса формируется код для отправки
+        ModesListItemListener(byte index){
+            this.index = index;
+        }
+
+        @Override
+        public void itemStateChanged(ItemEvent e) {
+            if(readyActDeactMode) {
+                if (chkModesList[index].isSelected()) {
+                    actDeactValue = 1;
+                } else {
+                    actDeactValue = 0;
+                }
+                Main.sendData(ACT_DEACT_MODE, index, actDeactValue);
+                System.out.println("Режим " + modeNames[index] + "(" + index + ") " + "Установлен в значение - " + chkModesList[index].isSelected());
+            }
+        }
+    }
+
     /*********Слушатель для слайдера яркости(реализован через ивенты мыши)*********/
     private class BrightMouseListener implements MouseListener{
         @Override
@@ -438,28 +464,18 @@ public class MainFrame {
         public void mousePressed(MouseEvent e) {        }
     }
 
-    /*********Слушатель для изменения списка режимов*********/
-    private class ModesListItemListener implements ItemListener{
-        //Переменная индекса чекбоса, значения активности режима (1 - добавить в список/активен, 0 - удалить из списка/деактивирован
-        byte index;
-        byte actDeactValue;
-
-        //Конструктор принимает в качестве параметра индекс чекбокса, который вызвал ивент, в зависимости от текущего состояния чекбокса формируется код для отправки
-        ModesListItemListener(byte index){
-                this.index = index;
-            }
-
+    private class AutoModeItemListener implements ItemListener{
         @Override
         public void itemStateChanged(ItemEvent e) {
-            if(readyActDeactMode) {
-                if (chkModesList[index].isSelected()) {
-                    actDeactValue = 1;
-                } else {
-                    actDeactValue = 0;
-                }
-                Main.sendData(ACT_DEACT_MODE, index, actDeactValue);
-                System.out.println("Режим " + modeNames[index] + "(" + index + ") " + "Установлен в значение - " + chkModesList[index].isSelected());
+            boolean currentState = chkAutoMode.isSelected();
+            int value;
+            if (currentState){
+                value = 1;
             }
+            else{
+                value = 0;
+            }
+            Main.sendData(SET_AUTO, value);
         }
     }
 
@@ -624,6 +640,12 @@ public class MainFrame {
 
                     break;
                 case SET_AUTO:
+                    if(recivedData[1] == 1){
+                        jtxStatus.setText("Авторежим включен!");
+                    }
+                    else{
+                        jtxStatus.setText("Авторежим выключен!");
+                    }
                     break;
                 case SET_COLOR:
                     break;
