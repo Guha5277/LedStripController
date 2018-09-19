@@ -29,6 +29,9 @@ public class MainFrame {
     //Флаг для готовности изменения списка режимов
     private boolean readyActDeactMode = false;
 
+    //Флаг наличия данных для сохранения
+    private boolean readyToSaveSet = false;
+
     //Локальные копиии переменных со значениями, используемыми в ардуино
     private int ledMode = 0;                //Номер текущего режима
     private int[] ledModes = new int[49];   //Массив с
@@ -67,13 +70,14 @@ public class MainFrame {
     private JButton btConnect = new JButton("Подключиться");                   //Кнопка "Поключить"
     private JButton btDisconnect = new JButton("Отключиться");             //Кнопка "Отключить"
 
-    private JToggleButton btOnOff = new JToggleButton("ВЫКЛ");              //Кнопка ВКЛ/ВЫКЛ ленты
+    private JToggleButton btOnOff = new JToggleButton();              //Кнопка ВКЛ/ВЫКЛ ленты
     private JLabel lblCurModeName = new JLabel("Quad Bright Cirve");     //Тектовый лейбл с именем текущего режима
     private JLabel lblCurNumOfModes = new JLabel("1/" + modesCount);                //Текстовый лейбл с порядковым номером текущего режима
-    private JButton btPrev = new JButton("P");                           //Кнопка "Предыдущий" режим
-    private JButton btPause = new JButton("P");                          //Кнопка "Пауза"
-    private JButton btNext = new JButton("N");                           //Кнопка "Следующий" режим
-    private JButton btAddToFav = new JButton("F");                       //Кнопка "Favorite" - для добавления режима в роли стартового
+    private JButton btPrev = new JButton();                           //Кнопка "Предыдущий" режим
+    private JButton btPause = new JButton();                          //Кнопка "Пауза"
+    private JButton btNext = new JButton();                           //Кнопка "Следующий" режим
+    private JButton btAddToFav = new JButton();                       //Кнопка "Favorite" - для добавления режима в роли стартового
+    private JButton btSaveSettings = new JButton();                   //Кнопка "Сохранить" - для сохранения настроек в EEPROM (ПЗУ) арудино
 
     private Box box = Box.createVerticalBox();                                        //Менеджер компоновки "коробка"
     private JScrollPane scrollPane = new JScrollPane(box);                            //Панель прокрутки
@@ -86,9 +90,8 @@ public class MainFrame {
     private JSlider speed = new JSlider(JSlider.HORIZONTAL, 0, 15, 5);         //Слайдер "Скорость"
 
     private JTextArea jtxStatus = new JTextArea();                                                 //Текстовое поле с системной информацией
-    private JColorChooser colorChooser = new JColorChooser();
+    private JColorChooser colorChooser = new JColorChooser();                                      //Сдандарная панель выбора цвета
     AbstractColorChooserPanel colorPanels[] = colorChooser.getChooserPanels();
-
 
     MainFrame() {
         //Получаем список портов, добавляем его в выпадающий список
@@ -154,19 +157,19 @@ public class MainFrame {
         mainControlPan.setLayout(new BoxLayout(mainControlPan, BoxLayout.X_AXIS));
         mainControlPan2.setLayout(new BoxLayout(mainControlPan2, BoxLayout.X_AXIS));
 
-        mainControlPan.setBackground(Color.PINK);              //
-        mainControlPan2.setBackground(Color.PINK);             //
-        mainControlPan.setPreferredSize(new Dimension(339, 60));
-        mainControlPan2.setPreferredSize(new Dimension(95, 60));
+        mainControlPan.setBackground(Color.PINK);
+        mainControlPan2.setBackground(Color.PINK);
+        mainControlPan.setPreferredSize(new Dimension(260, 60));
+        mainControlPan2.setPreferredSize(new Dimension(174, 60));
 
         //Задаём размеры кнопки ВКЛ/ВЫКЛ, добавляем слушателя
-        btOnOff.setPreferredSize(new Dimension(60, 10));
+       // btOnOff.setPreferredSize(new Dimension(123, 67));
         btOnOff.addActionListener(new ButtonOnOffListener());
         btPrev.addActionListener(new ButtonPrevListener());
         btPause.addActionListener(new ButtonPauseListener());
         btNext.addActionListener(new ButtonNextListener());
         btAddToFav.addActionListener(new ButtonFavoriteListener());
-
+        btSaveSettings.addActionListener(new ButtonSaveSetListener());
 
         //Отключаем прорисовку рамки у кнопок
         btOnOff.setBorderPainted(false);
@@ -174,13 +177,15 @@ public class MainFrame {
         btPause.setBorderPainted(false);
         btNext.setBorderPainted(false);
         btAddToFav.setBorderPainted(false);
+        btSaveSettings.setBorderPainted(false);
 
         //Устанавливаем внутренние отступы
-        btOnOff.setMargin(new Insets(0, 0, 0, 0));
+       // btOnOff.setMargin(new Insets(0, 0, 0, 0));
         btPrev.setMargin(new Insets(0, 0, 0, 0));
         btPause.setMargin(new Insets(0, 0, 0, 0));
         btNext.setMargin(new Insets(0, 0, 0, 0));
         btAddToFav.setMargin(new Insets(0, 0, 0, 0));
+        btSaveSettings.setMargin(new Insets(0, 0, 0, 0));
 
         //Отключаем прорисовку фокуса у кнопок
         btOnOff.setFocusPainted(false);
@@ -188,6 +193,38 @@ public class MainFrame {
         btPause.setFocusPainted(false);
         btNext.setFocusPainted(false);
         btAddToFav.setFocusPainted(false);
+        btSaveSettings.setFocusPainted(false);
+
+        //Подготавливаем и добавляем иконки для переключателя ВКЛ/ВЫКЛ
+        btOnOff.setBorder(null);
+        btOnOff.setContentAreaFilled(false);
+        btOnOff.setIcon(new ImageIcon("WS2812B_Controller/icons/switchOFF.png"));
+        btOnOff.setSelectedIcon(new ImageIcon("WS2812B_Controller/icons/switchON.png"));
+
+        //Подготавливаем и добавляем иконки для кнопки Назад
+        btPrev.setBorder(null);
+        btPrev.setContentAreaFilled(false);
+        btPrev.setIcon(new ImageIcon("WS2812B_Controller/icons/prev.png"));
+
+        //Подготавливаем и добавляем иконки для кнопки Пауза
+        btPause.setBorder(null);
+        btPause.setContentAreaFilled(false);
+        btPause.setIcon(new ImageIcon("WS2812B_Controller/icons/pause.png"));
+
+        //Подготавливаем и добавляем иконки для кнопки Вперёд
+        btNext.setBorder(null);
+        btNext.setContentAreaFilled(false);
+        btNext.setIcon(new ImageIcon("WS2812B_Controller/icons/next.png"));
+
+        //Подготавливаем и добавляем иконки для кнопки "Добавить в избранное"
+        btAddToFav.setBorder(null);
+        btAddToFav.setContentAreaFilled(false);
+        btAddToFav.setIcon(new ImageIcon("WS2812B_Controller/icons/fav.png"));
+
+        //Подготавливаем и добавляем иконки для кнопки сохранения настроек
+        btSaveSettings.setBorder(null);
+        btSaveSettings.setContentAreaFilled(false);
+        btSaveSettings.setIcon(new ImageIcon("WS2812B_Controller/icons/saveset.png"));
 
         //Добавляем компоненты на панель #1, добавляем отступы
         mainControlPan.add(Box.createHorizontalStrut(15));
@@ -203,8 +240,10 @@ public class MainFrame {
         mainControlPan2.add(btPause);
         mainControlPan2.add(Box.createHorizontalStrut(2));
         mainControlPan2.add(btNext);
-        mainControlPan2.add(Box.createHorizontalStrut(15));
+        mainControlPan2.add(Box.createHorizontalStrut(10));
         mainControlPan2.add(btAddToFav);
+        mainControlPan2.add(Box.createHorizontalStrut(2));
+        mainControlPan2.add(btSaveSettings);
 
 /**************************Центральная панель**********************************************************************/
         //Инициализируем чекбоксы, добавляя в качестве параметра строки с названиями режимов, тутже добавляем чекбоксы в менеджер компоновки "коробка"
@@ -217,6 +256,7 @@ public class MainFrame {
 
         //Задаём размеры панели прокрутки
         scrollPane.setPreferredSize(new Dimension(435, 400));
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
 
 /*****************************НИЖНЯЯ ПАНЕЛЬ**************************************************************/
@@ -390,6 +430,14 @@ public class MainFrame {
         @Override
         public void actionPerformed(ActionEvent e) {
             Main.sendData(FAV, ledMode);
+        }
+    }
+
+    /**********Слушатель для кнопки "Сохранить настройки"************/
+    private class ButtonSaveSetListener implements ActionListener{
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Main.sendData(SAVE_SETTINGS);
         }
     }
 
@@ -579,13 +627,13 @@ public class MainFrame {
                 case ON_OFF:
                     if (recivedData[1] == 0) {
                         jtxStatus.setText("Лента выключена!");
-                        btOnOff.setText("ВЫКЛ");
                         btOnOff.setSelected(false);
+                        readyToSaveSet = false;
                         disableAll();
                     } else {
                         jtxStatus.setText("Лента включена!");
-                        btOnOff.setText("ВКЛ");
                         btOnOff.setSelected(true);
+                        readyToSaveSet = true;
                         enableAll();
                     }
                     break;
@@ -603,6 +651,9 @@ public class MainFrame {
                         speed.setEnabled(true);
                     }
                     speed.setValue(5);
+
+                    readyToSaveSet = true;
+
                     jtxStatus.setText("Режим № " + ledMode + " - " + modeNames[ledMode - 1]);
                     break;
 
@@ -632,6 +683,8 @@ public class MainFrame {
                     actDeactResult = recivedData[2] == 1;
                     jtxStatus.setText("Режим " + modeNames[recivedData[1]] + "(" + recivedData[1] + ") " + "Установлен в значение - " + actDeactResult);
 
+                    readyToSaveSet = true;
+
                     break;
                 case SET_AUTO:
                     if(recivedData[1] == 1){
@@ -640,6 +693,8 @@ public class MainFrame {
                     else{
                         jtxStatus.setText("Авторежим выключен!");
                     }
+
+                    readyToSaveSet = true;
                     break;
 
                 case SET_COLOR:
@@ -652,6 +707,7 @@ public class MainFrame {
                     maxBright = recivedData[1];
                     brightness.setValue(maxBright);
                     jtxStatus.setText("Яркость установлена в значение " + maxBright + " единиц");
+                    readyToSaveSet = true;
 
                     break;
                 case SET_SPEED:
@@ -662,31 +718,40 @@ public class MainFrame {
                     break;
 
                 case SAVE_SETTINGS:
+                    if(recivedData[1] > 0){
+                        readyToSaveSet = false;
+                        jtxStatus.setText("Данные сохранены!");
+                    }
                     break;
             }
         }catch (ArrayIndexOutOfBoundsException ae){
             ae.printStackTrace();
         }
 
+        btSaveSettings.setEnabled(readyToSaveSet);
+
     }
 
     /*******Инициализация ГПИ начальными значениями, полученными от дуины********/
-    private void initializeGUI(int[] recivedData){
+    private void initializeGUI(int[] recivedData) throws  ArrayIndexOutOfBoundsException{
         //Вывод системной информации
         jtxStatus.setText("Подключено к " + Main.com + " на скорости " + Main.baudRate);
         jtxStatus.setBackground(Color.GREEN);
 
         //Заполнение переменных полученными от ардуины данными
         int indx1 = 0;
-        ledMode = recivedData[1];
-        maxBright = recivedData[2];
-        autoMode = recivedData[3];
-        thisdelay = recivedData[4];
-        for (int indx2 = 5; indx2 < 54; indx2++) {
-            ledModes[indx1] = recivedData[indx2];
-            indx1++;
+        try {
+            ledMode = recivedData[1];
+            maxBright = recivedData[2];
+            autoMode = recivedData[3];
+            thisdelay = recivedData[4];
+            for (int indx2 = 5; indx2 < 54; indx2++) {
+                ledModes[indx1] = recivedData[indx2];
+                indx1++;
+            }
+        }catch (ArrayIndexOutOfBoundsException ae){
+            ae.printStackTrace();
         }
-
         //Применение настроек - установка состояния интерфейса в зависимости от состояния ленты
         if (ledMode > 0) {
             btOnOff.setSelected(true);
@@ -728,6 +793,7 @@ public class MainFrame {
         btPause.setEnabled(false);
         btNext.setEnabled(false);
         btAddToFav.setEnabled(false);
+        btSaveSettings.setEnabled(false);
         chkAutoMode.setEnabled(false);
         btColorChooser.setEnabled(false);
         lblBright.setEnabled(false);
@@ -755,6 +821,7 @@ public class MainFrame {
         btPause.setEnabled(true);
         btNext.setEnabled(true);
         btAddToFav.setEnabled(true);
+        if(readyToSaveSet) btSaveSettings.setEnabled(true);
         chkAutoMode.setEnabled(true);
         btColorChooser.setEnabled(true);
         lblBright.setEnabled(true);
