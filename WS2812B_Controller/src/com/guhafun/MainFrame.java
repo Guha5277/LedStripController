@@ -86,7 +86,8 @@ public class MainFrame {
     private JSlider speed = new JSlider(JSlider.HORIZONTAL, 0, 15, 5);         //Слайдер "Скорость"
 
     private JTextArea jtxStatus = new JTextArea();                                                 //Текстовое поле с системной информацией
-    private JColorChooser jcolchoose = new JColorChooser();
+    private JColorChooser colorChooser = new JColorChooser();
+    AbstractColorChooserPanel colorPanels[] = colorChooser.getChooserPanels();
 
 
     MainFrame() {
@@ -133,11 +134,9 @@ public class MainFrame {
         //Меняем цвет кнопки отключения и делаем её неактивной
         btDisconnect.setBackground(Color.pink);
         btDisconnect.setEnabled(false);
-        // btDisconnect.setEnabled(false);
-        // btDisconnect.setVisible(false);
 
         //Добавялем слушателей для кнопок
-//        combCom.addActionListener(new ComboComListener());
+//      combCom.addActionListener(new ComboComListener());
         btConnect.addActionListener(new ButtonConnectListener());
         btDisconnect.addActionListener(new ButtonDisconnectListener());
 
@@ -247,6 +246,7 @@ public class MainFrame {
         chkAutoMode.addItemListener(new AutoModeItemListener());
         btColorChooser.setForeground(Color.WHITE);
         btColorChooser.setBackground(Color.BLACK);
+        btColorChooser.addActionListener(new ButtonColorListener());
 
         //Настраиваем слайдеры ("Главные" шкалы деления и второстепенные, их отображение, задаём хэш-таблицу для прорисовки отдельных значений и её отображение, задаём размеры)
         brightness.setMajorTickSpacing(63);
@@ -290,6 +290,7 @@ public class MainFrame {
         frame.setResizable(false);
         frame.setVisible(true);
 
+        //Запускаем фоновый поток, отслеживающий приходящие данные и изменяющий, в соответствии с ними, ГПИ
         new UIUpdater().execute();
     }
 
@@ -335,8 +336,7 @@ public class MainFrame {
             btDisconnect.setEnabled(false);
             disableAll();
 
-            jtxStatus.setText("Отключено!");
-            jtxStatus.setBackground(Color.WHITE);
+
         }
     }
 
@@ -344,7 +344,7 @@ public class MainFrame {
     private class ButtonOnOffListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            jtxStatus.setBackground(Color.WHITE);
+
             Main.sendData(ON_OFF);
         }
 
@@ -363,7 +363,7 @@ public class MainFrame {
     private class ButtonPrevListener implements ActionListener{
         @Override
         public void actionPerformed(ActionEvent e) {
-            jtxStatus.setBackground(Color.WHITE);
+
 
             Main.sendData(PREV);
         }
@@ -373,7 +373,6 @@ public class MainFrame {
     private class ButtonPauseListener implements ActionListener{
         @Override
         public void actionPerformed(ActionEvent e) {
-            jtxStatus.setBackground(Color.WHITE);
             Main.sendData(PAUSE);
         }
     }
@@ -382,7 +381,6 @@ public class MainFrame {
     private class ButtonNextListener implements ActionListener{
         @Override
         public void actionPerformed(ActionEvent e) {
-            jtxStatus.setBackground(Color.WHITE);
             Main.sendData(NEXT);
         }
     }
@@ -391,7 +389,6 @@ public class MainFrame {
     private class ButtonFavoriteListener implements ActionListener{
         @Override
         public void actionPerformed(ActionEvent e) {
-            jtxStatus.setBackground(Color.WHITE);
             Main.sendData(FAV, ledMode);
         }
     }
@@ -464,6 +461,7 @@ public class MainFrame {
         public void mousePressed(MouseEvent e) {        }
     }
 
+    /*********Слушаель для чекбокса "Авто"****************/
     private class AutoModeItemListener implements ItemListener{
         @Override
         public void itemStateChanged(ItemEvent e) {
@@ -479,31 +477,24 @@ public class MainFrame {
         }
     }
 
-    private class ColorChooser extends AbstractColorChooserPanel{
+    /********Слушатель для кнопки "Цвет"*****************/
+    private class ButtonColorListener implements ActionListener{
         @Override
-        public void buildChooser(){
+        public void actionPerformed(ActionEvent e) {
 
+           Color initColor = btColorChooser.getBackground();
+           Color bg =  JColorChooser.showDialog(scrollPane, "Выберите цвет", initColor);
+           if (bg != null){
+               btColorChooser.setBackground(bg);
+
+               int r = bg.getRed();
+               int g = bg.getGreen();
+               int b = bg.getBlue();
+
+               Main.sendData(SET_COLOR, r, g, b);
+
+           }
         }
-        @Override
-        public void updateChooser(){
-
-        }
-        @Override
-        public Icon getSmallDisplayIcon(){
-            return null;
-        }
-        @Override
-        public Icon getLargeDisplayIcon(){
-            return null;
-        }
-        @Override
-        public String getDisplayName(){
-            return null;
-        }
-
-
-
-
     }
 
     /********Фоновый поток для обновления данных GUI***********/
@@ -582,6 +573,7 @@ public class MainFrame {
 
     /*******Метод, который обновляет ГПИ в соответствии с актуальным состоянием ленты (переданным от арудины)************/
     private void syncGUI(int... recivedData) throws ArrayIndexOutOfBoundsException{
+        jtxStatus.setBackground(Color.WHITE);
         try {
             switch (recivedData[0]) {
                 case ON_OFF:
@@ -629,9 +621,11 @@ public class MainFrame {
                         brightness.setEnabled(true);
                     }
                     break;
+
                 case FAV:
                     jtxStatus.setText("Режим " + modeNames[ledMode - 1] + "(" + ledMode + ")" + " установлен стартовым режимом");
                     break;
+
                 case ACT_DEACT_MODE:
                     boolean actDeactResult;
 
@@ -647,8 +641,13 @@ public class MainFrame {
                         jtxStatus.setText("Авторежим выключен!");
                     }
                     break;
+
                 case SET_COLOR:
+                    lblCurModeName.setText("Произвольный цвет");
+                    lblCurNumOfModes.setText("");
+                    jtxStatus.setText("Цвет ленты установлен в R: " + recivedData[1] + ", G: " + recivedData[2] + ", B: " + recivedData[3]);
                     break;
+
                 case SET_BRIGHT:
                     maxBright = recivedData[1];
                     brightness.setValue(maxBright);
@@ -661,6 +660,7 @@ public class MainFrame {
                         jtxStatus.setText("Скорость режима "+ modeNames[ledMode - 1] + "(" + ledMode + ") " + "установлена в значение - " + thisdelay);
                     }
                     break;
+
                 case SAVE_SETTINGS:
                     break;
             }
@@ -739,6 +739,9 @@ public class MainFrame {
         for (int i = 0; i < modesCount; i++){
             chkModesList[i].setEnabled(false);
         }
+
+        jtxStatus.setText("Отключено!");
+        jtxStatus.setBackground(Color.WHITE);
 
     }
 
