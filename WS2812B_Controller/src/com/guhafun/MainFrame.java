@@ -59,11 +59,11 @@ public class MainFrame {
     private JCheckBox[] chkModesList = new JCheckBox[modeNames.length];
 
     //Массив содержащий доступные COM-порты и список скоростей подключения к ленте
-    private String[] comPorts;
+//    private String[] comPorts;
     private Integer[] baudRate = {600, 1200, 2400, 4800, 9600, 19200, 28800, 38400, 57600, 115200};
 
     //Создаём компоненты в порядке их прорисовки - слева-направо, сверху-вниз
-    private JButton btRefresh = new JButton("R");
+    //private JButton btRefresh = new JButton("R");
     private JComboBox<String> combCom;                                          //Выпадающий список доступных COM-портов
     private JComboBox<Integer> combBaud = new JComboBox<>(baudRate);            //Выпадающий список доступной скорости подключения
     private JButton btConnect = new JButton("Подключиться");              //Кнопка "Поключить"
@@ -94,8 +94,10 @@ public class MainFrame {
 
     MainFrame() {
         //Получаем список портов, добавляем его в выпадающий список
+        String[] comPorts;
         comPorts = SerialPortList.getPortNames();
         combCom = new JComboBox<>(comPorts);
+        combCom.setSelectedIndex(comPorts.length-1);
 
         //Создаём и настраиваем главное окно
         JFrame frame = new JFrame("WS2812B Controller");
@@ -127,12 +129,12 @@ public class MainFrame {
         btDisconnect.setPreferredSize(new Dimension(90, 25));
 
         //Задаём внутренние отступы у кнопки, чтобы сделать её меньше
-        btRefresh.setMargin(new Insets(0, 0, 0, 0));
+    //    btRefresh.setMargin(new Insets(0, 0, 0, 0));
         btConnect.setMargin(new Insets(5, 2, 5, 2));
         btDisconnect.setMargin(new Insets(5, 2, 5, 2));
 
         //Отключаем прорисовку фокуса у кнопок
-        btRefresh.setFocusPainted(false);
+     //   btRefresh.setFocusPainted(false);
         btConnect.setFocusPainted(false);
         btDisconnect.setFocusPainted(false);
 
@@ -144,13 +146,13 @@ public class MainFrame {
         btDisconnect.setEnabled(false);
 
         //Добавялем слушателей для кнопок
-        btRefresh.addActionListener(new ButtonRefreshListener());
+        combCom.addMouseListener(new CombComMouseListener());
         btConnect.addActionListener(new ButtonConnectListener());
         btDisconnect.addActionListener(new ButtonDisconnectListener());
 
         //Добавляем компоненты на панель
-        connectPan.add(btRefresh, contConnect1);
-        connectPan.add(combCom, contConnect2);
+     //   connectPan.add(btRefresh, contConnect1);
+        connectPan.add(combCom, contConnect1);
         connectPan.add(combBaud, contConnect2);
         connectPan.add(btConnect, contConnect1);
         connectPan.add(btDisconnect, contConnect2);
@@ -339,15 +341,36 @@ public class MainFrame {
         new UIUpdater().execute();
     }
 
-    /*********Слушатель для кнопки обновления списка COM-портов***********/
-    class ButtonRefreshListener implements ActionListener{
+   /*********Слушатель для выпадающего списка COM-порртов*********/
+    private class CombComMouseListener implements MouseListener{
         @Override
-        public void actionPerformed(ActionEvent e) {
-            System.out.println("COM are updated!");
+        public void mouseClicked(MouseEvent e){}
+        @Override
+        public void mouseEntered(MouseEvent e) {
             //Обновляем список доступных COM-портов для подключения
-            comPorts = SerialPortList.getPortNames();
-            combCom = new JComboBox<String>(comPorts);
+            if (!Main.isConnected) {
+                int lastSelectedIndex;
+                String[] comPorts;
+
+                lastSelectedIndex = combCom.getSelectedIndex();
+                combCom.removeAllItems();
+
+                comPorts = SerialPortList.getPortNames();
+                for (String s : comPorts) {
+                    combCom.addItem(s);
+                }
+               if(lastSelectedIndex <= comPorts.length - 1) {
+                  combCom.setSelectedIndex(lastSelectedIndex);
+               }
+            }
+
         }
+        @Override
+        public void mouseReleased(MouseEvent e){}
+        @Override
+        public void mouseExited(MouseEvent e) {}
+        @Override
+        public void mousePressed(MouseEvent e) {}
     }
 
     /*************Слушатель кнопки подключения*************/
@@ -719,8 +742,7 @@ public class MainFrame {
 
                 case SET_SPEED:
                     if (recivedData[1] > 0){
-                        thisdelay = recivedData[1];
-                        jtxStatus.setText("Скорость режима "+ modeNames[ledMode - 1] + "(" + ledMode + ") " + "установлена в значение - " + thisdelay);
+                       jtxStatus.setText("Скорость режима "+ modeNames[ledMode - 1] + "(" + ledMode + ") " + "установлена в значение - " + recivedData[1]);
                     }
                     break;
 
