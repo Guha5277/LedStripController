@@ -34,60 +34,59 @@ public class MainFrame {
 
     //Локальные копиии переменных со значениями, используемыми в ардуино
     private int ledMode = 0;                //Номер текущего режима
-    private int[] ledModes = new int[49];   //Массив с
-    private int maxBright = 0;
-    private int autoMode = 0;
-    private int thisdelay = 0;
-    private int thisdelayChanged = 0;
+    private int[] ledModes = new int[49];   //Список активных режимов
+    private int maxBright = 0;              //Максимальная яркость
+    private int autoMode = 0;               //Состояние авторежима (0 - выключен, 1 - включен)
+    private int thisdelay = 0;              //Значение задержки между итерациями эффектов (увеличивая это значение визуально изменить скорость воспроизведения, при уменьшении - наоборот)
 
-    //Создаём строковый массив данных, содержащий названия режимов ленты.
+    //Строковый массив данных, содержащий названия режимов ленты.
     private String[] modeNames = {"Rainbow Fade", "Rainbow Loop", "Random Burst", "Color Bounce", "Color Bounce Fade", "EMS Light One",
-            "EMS Light ALL", "Flicker", "Pulse One Color",
-            "Pulse with change color", "Fade Vertical", "Rule 30", "Random March", "RWB March", "Radiation", "Color Loop Verdelay",
-            "White Temps", "Sin Bright Wave", "Pop Horizontal", "Quad Bright Cirve", "Flame", "Rainbow Vertical", "Pacman", "Random Color Pop", "EMS Lights Strobe",
-            "RGB Propeller", "Kitt", "Matrix", "NEW! Rainbow Loop", "Color Wipe", "Cylon Bounce", "Fire",
-            "Rainbow Cycle", "Twinkle Random", "Running Lights",
-            "Sparkle", "Snow Sparkle", "Theater Chase", "Theater Chase Rainbow",
-            "Strobe", "Bouncing Ball", "Bouncing Colored Ball",
-            "Red", "Green", "Blue",
-            "Yellow", "Cyan", "Purple", "White"};
+            "EMS Light ALL", "Flicker", "Pulse One Color", "Pulse with change color", "Fade Vertical", "Rule 30",
+            "Random March", "RWB March", "Radiation", "Color Loop Verdelay", "White Temps", "Sin Bright Wave",
+            "Pop Horizontal", "Quad Bright Cirve", "Flame", "Rainbow Vertical", "Pacman", "Random Color Pop",
+            "EMS Lights Strobe", "RGB Propeller", "Kitt", "Matrix", "NEW! Rainbow Loop", "Color Wipe",
+            "Cylon Bounce", "Fire", "Rainbow Cycle", "Twinkle Random", "Running Lights", "Sparkle",
+            "Snow Sparkle", "Theater Chase", "Theater Chase Rainbow", "Strobe", "Bouncing Ball", "Bouncing Colored Ball",
+            "Red", "Green", "Blue", "Yellow", "Cyan", "Purple", "White"};
 
+    //Переменная со значением количества режимов
     private int modesCount = modeNames.length;
 
     //Массив для работы с данными слайдера скорости - количество элементов массива эквивалентно количеству делений слайдера
     private double[] hashSpeed = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0};
 
-    //Создаём эквивалентный modeNames массив чекбоксов
+    //Массив чекбоксов (эквивалентный modeNamse)
     private JCheckBox[] chkModesList = new JCheckBox[modeNames.length];
 
-    //Создаём массив содержащий доступные COM-порты и список скоростей подключения к ленте. Добавляем эти данные в выпадающие списки JComboBox
+    //Массив содержащий доступные COM-порты и список скоростей подключения к ленте
     private String[] comPorts;
     private Integer[] baudRate = {600, 1200, 2400, 4800, 9600, 19200, 28800, 38400, 57600, 115200};
 
     //Создаём компоненты в порядке их прорисовки - слева-направо, сверху-вниз
+    private JButton btRefresh = new JButton("R");
     private JComboBox<String> combCom;                                          //Выпадающий список доступных COM-портов
-    private JComboBox<Integer> combBaud = new JComboBox<>(baudRate);     //Выпадающий список доступной скорости подключения
-    private JButton btConnect = new JButton("Подключиться");                   //Кнопка "Поключить"
-    private JButton btDisconnect = new JButton("Отключиться");             //Кнопка "Отключить"
+    private JComboBox<Integer> combBaud = new JComboBox<>(baudRate);            //Выпадающий список доступной скорости подключения
+    private JButton btConnect = new JButton("Подключиться");              //Кнопка "Поключить"
+    private JButton btDisconnect = new JButton("Отключиться");            //Кнопка "Отключить"
 
-    private JToggleButton btOnOff = new JToggleButton();              //Кнопка ВКЛ/ВЫКЛ ленты
-    private JLabel lblCurModeName = new JLabel("Quad Bright Cirve");     //Тектовый лейбл с именем текущего режима
-    private JLabel lblCurNumOfModes = new JLabel("1/" + modesCount);                //Текстовый лейбл с порядковым номером текущего режима
-    private JButton btPrev = new JButton();                           //Кнопка "Предыдущий" режим
-    private JButton btPause = new JButton();                          //Кнопка "Пауза"
-    private JButton btNext = new JButton();                           //Кнопка "Следующий" режим
-    private JButton btAddToFav = new JButton();                       //Кнопка "Favorite" - для добавления режима в роли стартового
-    private JButton btSaveSettings = new JButton();                   //Кнопка "Сохранить" - для сохранения настроек в EEPROM (ПЗУ) арудино
+    private JToggleButton btOnOff = new JToggleButton();                       //Кнопка ВКЛ/ВЫКЛ ленты
+    private JLabel lblCurModeName = new JLabel("Quad Bright Cirve");      //Тектовый лейбл с именем текущего режима
+    private JLabel lblCurNumOfModes = new JLabel("1/" + modesCount);      //Текстовый лейбл с порядковым номером текущего режима
+    private JButton btPrev = new JButton();                                 //Кнопка "Предыдущий" режим
+    private JButton btPause = new JButton();                                //Кнопка "Пауза"
+    private JButton btNext = new JButton();                                 //Кнопка "Следующий" режим
+    private JButton btAddToFav = new JButton();                             //Кнопка "Favorite" - для добавления режима в роли стартового
+    private JButton btSaveSettings = new JButton();                         //Кнопка "Сохранить" - для сохранения настроек в EEPROM (ПЗУ) арудино
 
     private Box box = Box.createVerticalBox();                                        //Менеджер компоновки "коробка"
     private JScrollPane scrollPane = new JScrollPane(box);                            //Панель прокрутки
 
-    private JCheckBox chkAutoMode = new JCheckBox("Авто");                             //Чекбокс для ВКЛ/ВЫКЛ автоматической смены режима
-    private JButton btColorChooser = new JButton("Цвет");                             //Кнопка для вывода произвольного цвета на экран
-    private JLabel lblBright = new JLabel("Яркость");                                  //Лейбл "Яркость"
-    private JLabel lblSpeed = new JLabel("Скорость");                                  //Лейбл "Скорость"
+    private JCheckBox chkAutoMode = new JCheckBox("Авто");                                     //Чекбокс для ВКЛ/ВЫКЛ автоматической смены режима
+    private JButton btColorChooser = new JButton("Цвет");                                      //Кнопка для вывода произвольного цвета на экран
+    private JLabel lblBright = new JLabel("Яркость");                                          //Лейбл "Яркость"
+    private JLabel lblSpeed = new JLabel("Скорость");                                          //Лейбл "Скорость"
     private JSlider brightness = new JSlider(JSlider.HORIZONTAL, 1, 255, 255);     //Слайдер "Яркость"
-    private JSlider speed = new JSlider(JSlider.HORIZONTAL, 0, 15, 5);         //Слайдер "Скорость"
+    private JSlider speed = new JSlider(JSlider.HORIZONTAL, 0, 15, 5);             //Слайдер "Скорость"
 
     private JTextArea jtxStatus = new JTextArea();                                                 //Текстовое поле с системной информацией
     private JColorChooser colorChooser = new JColorChooser();                                      //Сдандарная панель выбора цвета
@@ -105,8 +104,8 @@ public class MainFrame {
 
 /***********************************ВЕРХНАЯЯ ПАНЕЛЬ ПОДКЛЮЧЕНИЯ****************************************************************/
         //Создаём верхнюю панель (для элементов подключения-отключения), задаём панели новый менеджер компоновки элементов
-        JPanel connectPan2 = new JPanel();
-        connectPan2.setLayout(new GridBagLayout());
+        JPanel connectPan = new JPanel();
+        connectPan.setLayout(new GridBagLayout());
 
         /*Настраиваем стили для наших элементов. Параметры, проинимаемые конструктором GridBagConstraints:
          *gridx - номер ячейки расположения компонента по оси X (отсчёт идёт с левого верхнего угла, RELATIVE - означает положение предыдущего + 1);
@@ -128,8 +127,14 @@ public class MainFrame {
         btDisconnect.setPreferredSize(new Dimension(90, 25));
 
         //Задаём внутренние отступы у кнопки, чтобы сделать её меньше
+        btRefresh.setMargin(new Insets(0, 0, 0, 0));
         btConnect.setMargin(new Insets(5, 2, 5, 2));
         btDisconnect.setMargin(new Insets(5, 2, 5, 2));
+
+        //Отключаем прорисовку фокуса у кнопок
+        btRefresh.setFocusPainted(false);
+        btConnect.setFocusPainted(false);
+        btDisconnect.setFocusPainted(false);
 
         //Задаём выбранный элемент у раскрывающегося списка (сделал для себя, чтобы каждый раз не выбирать необходимую скорость)
         combBaud.setSelectedIndex(9);
@@ -139,15 +144,16 @@ public class MainFrame {
         btDisconnect.setEnabled(false);
 
         //Добавялем слушателей для кнопок
-//      combCom.addActionListener(new ComboComListener());
+        btRefresh.addActionListener(new ButtonRefreshListener());
         btConnect.addActionListener(new ButtonConnectListener());
         btDisconnect.addActionListener(new ButtonDisconnectListener());
 
         //Добавляем компоненты на панель
-        connectPan2.add(combCom, contConnect1);
-        connectPan2.add(combBaud, contConnect2);
-        connectPan2.add(btConnect, contConnect1);
-        connectPan2.add(btDisconnect, contConnect2);
+        connectPan.add(btRefresh, contConnect1);
+        connectPan.add(combCom, contConnect2);
+        connectPan.add(combBaud, contConnect2);
+        connectPan.add(btConnect, contConnect1);
+        connectPan.add(btDisconnect, contConnect2);
 
 
 /******************************ПАНЕЛЬ ЭЛЕМЕНТОВ УПРАВЛЕНИЯ******************************************************************/
@@ -163,7 +169,6 @@ public class MainFrame {
         mainControlPan2.setPreferredSize(new Dimension(174, 60));
 
         //Задаём размеры кнопки ВКЛ/ВЫКЛ, добавляем слушателя
-       // btOnOff.setPreferredSize(new Dimension(123, 67));
         btOnOff.addActionListener(new ButtonOnOffListener());
         btPrev.addActionListener(new ButtonPrevListener());
         btPause.addActionListener(new ButtonPauseListener());
@@ -180,7 +185,7 @@ public class MainFrame {
         btSaveSettings.setBorderPainted(false);
 
         //Устанавливаем внутренние отступы
-       // btOnOff.setMargin(new Insets(0, 0, 0, 0));
+        btOnOff.setMargin(new Insets(0, 0, 0, 0));
         btPrev.setMargin(new Insets(0, 0, 0, 0));
         btPause.setMargin(new Insets(0, 0, 0, 0));
         btNext.setMargin(new Insets(0, 0, 0, 0));
@@ -321,7 +326,7 @@ public class MainFrame {
 /*********Настраиваем главное окно, добавляем компоненты и выводим всё на экран*******/
         disableAll();
         frame.setSize(450, 650);
-        frame.add(connectPan2);
+        frame.add(connectPan);
         frame.add(mainControlPan);
         frame.add(mainControlPan2);
         frame.add(scrollPane);
@@ -334,16 +339,16 @@ public class MainFrame {
         new UIUpdater().execute();
     }
 
-//    /*********Слушатель нажатия на список COM-портов***********/
-//    class ComboComListener implements ActionListener{
-//        @Override
-//        public void actionPerformed(ActionEvent e) {
-//            System.out.println("COM are updated!");
-//            //Обновляем список доступных COM-портов для подключения (раньше это было возможно только после перезагрузки приложения)
-//            comPorts = SerialPortList.getPortNames();
-//            combCom = new JComboBox<String>(comPorts);
-//        }
-//    }
+    /*********Слушатель для кнопки обновления списка COM-портов***********/
+    class ButtonRefreshListener implements ActionListener{
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            System.out.println("COM are updated!");
+            //Обновляем список доступных COM-портов для подключения
+            comPorts = SerialPortList.getPortNames();
+            combCom = new JComboBox<String>(comPorts);
+        }
+    }
 
     /*************Слушатель кнопки подключения*************/
     private class ButtonConnectListener implements ActionListener {
@@ -370,10 +375,12 @@ public class MainFrame {
         @Override
         public void actionPerformed(ActionEvent e) {
             Main.disconnect();
+
             btConnect.setEnabled(true);
             combCom.setEnabled(true);
             combBaud.setEnabled(true);
             btDisconnect.setEnabled(false);
+
             disableAll();
 
 
@@ -497,7 +504,7 @@ public class MainFrame {
             //Скорость регулируется путём изменения перменной задержки - чем меньше её значение, тем быстрее работает эффект
             //Считываем значение слайдера (0-15), каждое значение соответствует своей ячейке в массиве hashSpeed
             int arrayIndex = speed.getValue();
-            thisdelayChanged = (int)(thisdelay/hashSpeed[arrayIndex]);
+            int thisdelayChanged = (int)(thisdelay/hashSpeed[arrayIndex]);
 
             System.out.println(thisdelayChanged);
             Main.sendData(SET_SPEED, thisdelayChanged);
@@ -570,14 +577,14 @@ public class MainFrame {
 
         @Override
         public Boolean doInBackground() throws Exception {
-            Main.tryToConnect();
+            Main.sendData(CONNECT);
             Thread.sleep(200);
             for (i = 0; i < 10; i++){
                     publish(i);             //методом publish() можно передавать промежуточные результаты работы в метод process()
                 if (Main.isConnected){
                     return true;
                 }
-                Main.tryToConnect();
+                Main.sendData(CONNECT);
 
                 Thread.sleep(500);
             }
@@ -619,7 +626,7 @@ public class MainFrame {
     }
     }
 
-    /*******Метод, который обновляет ГПИ в соответствии с актуальным состоянием ленты (переданным от арудины)************/
+    /*******Метод, который обновляет ГПИ в соответствии с принятыми данными от ардуины************/
     private void syncGUI(int... recivedData) throws ArrayIndexOutOfBoundsException{
         jtxStatus.setBackground(Color.WHITE);
         try {
@@ -684,8 +691,8 @@ public class MainFrame {
                     jtxStatus.setText("Режим " + modeNames[recivedData[1]] + "(" + recivedData[1] + ") " + "Установлен в значение - " + actDeactResult);
 
                     readyToSaveSet = true;
-
                     break;
+
                 case SET_AUTO:
                     if(recivedData[1] == 1){
                         jtxStatus.setText("Авторежим включен!");
@@ -708,8 +715,8 @@ public class MainFrame {
                     brightness.setValue(maxBright);
                     jtxStatus.setText("Яркость установлена в значение " + maxBright + " единиц");
                     readyToSaveSet = true;
-
                     break;
+
                 case SET_SPEED:
                     if (recivedData[1] > 0){
                         thisdelay = recivedData[1];
@@ -784,6 +791,7 @@ public class MainFrame {
 
     /*****Метод для отключения всех компонентов при первом запуске и при нажатии на кнопку "ВЫКЛ"***/
     private void disableAll(){
+        //Панель управления
         if (!Main.isConnected) {
             btOnOff.setEnabled(false);
         }
@@ -794,6 +802,8 @@ public class MainFrame {
         btNext.setEnabled(false);
         btAddToFav.setEnabled(false);
         btSaveSettings.setEnabled(false);
+
+        //Нижняя панель
         chkAutoMode.setEnabled(false);
         btColorChooser.setEnabled(false);
         lblBright.setEnabled(false);
@@ -801,19 +811,23 @@ public class MainFrame {
         brightness.setEnabled(false);
         speed.setEnabled(false);
 
-        readyActDeactMode = false;
+        //Центральная панель
         for (int i = 0; i < modesCount; i++){
             chkModesList[i].setEnabled(false);
         }
 
-        jtxStatus.setText("Отключено!");
+        readyActDeactMode = false;
+
         jtxStatus.setBackground(Color.WHITE);
 
     }
 
     /*****Метод для включения всех компонентов при удачном получении настроек и при нажатии на кнопку "ВКЛ"***/
     private void enableAll(){
+        //Верхняя панель
         btDisconnect.setEnabled(true);
+
+        //Панель управления
         btOnOff.setEnabled(true);
         lblCurModeName.setEnabled(true);
         lblCurNumOfModes.setEnabled(true);
@@ -822,6 +836,8 @@ public class MainFrame {
         btNext.setEnabled(true);
         btAddToFav.setEnabled(true);
         if(readyToSaveSet) btSaveSettings.setEnabled(true);
+
+        //Нижняя панель
         chkAutoMode.setEnabled(true);
         btColorChooser.setEnabled(true);
         lblBright.setEnabled(true);
@@ -829,6 +845,7 @@ public class MainFrame {
         brightness.setEnabled(true);
         speed.setEnabled(true);
 
+        //Центральная панель
         for (int i = 0; i < modesCount; i++){
             chkModesList[i].setEnabled(true);
         }
