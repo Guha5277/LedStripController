@@ -6,9 +6,9 @@ import jssc.*;
 
 public class Main {
 
-    private static SerialPort serialPort;       //Объект через который будут происходить все манипуляции с COM-портом
-    public static boolean isConnected = false;  //Флаг подключения
-    public static boolean isRecponceRecived = false; //Флаг получения ответа
+    private static SerialPort serialPort;               //Объект через который будут происходить все манипуляции с COM-портом
+    public static boolean isConnected = false;          //Флаг подключения
+    public static boolean isRecponceRecived = false;    //Флаг получения ответа
 
     public static String com = "";              //Имя нашего ком-порта
     public static int baudRate = 0;             //Скорость подключения
@@ -36,15 +36,7 @@ public class Main {
         }
 
     }
-
-    /***************Попытка подключения******************/
-    public static void tryToConnect() {
-        try {
-            serialPort.writeByte((byte) 1);
-        } catch (SerialPortException se) {
-            se.printStackTrace();
-        }
-    }
+    
     /***************Отключение******************/
     public static void disconnect() {
         try {

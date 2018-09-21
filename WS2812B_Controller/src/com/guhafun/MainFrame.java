@@ -59,11 +59,9 @@ public class MainFrame {
     private JCheckBox[] chkModesList = new JCheckBox[modeNames.length];
 
     //Массив содержащий доступные COM-порты и список скоростей подключения к ленте
-//    private String[] comPorts;
     private Integer[] baudRate = {600, 1200, 2400, 4800, 9600, 19200, 28800, 38400, 57600, 115200};
 
     //Создаём компоненты в порядке их прорисовки - слева-направо, сверху-вниз
-    //private JButton btRefresh = new JButton("R");
     private JComboBox<String> combCom;                                          //Выпадающий список доступных COM-портов
     private JComboBox<Integer> combBaud = new JComboBox<>(baudRate);            //Выпадающий список доступной скорости подключения
     private JButton btConnect = new JButton("Подключиться");              //Кнопка "Поключить"
@@ -202,36 +200,62 @@ public class MainFrame {
         btAddToFav.setFocusPainted(false);
         btSaveSettings.setFocusPainted(false);
 
+        ImageIcon icOff = new ImageIcon(getClass().getResource("/icons/switchOFF.png"));
+        ImageIcon icOn = new ImageIcon(getClass().getResource("/icons/switchON.png"));
+        ImageIcon icPrev = new ImageIcon(getClass().getResource("/icons/prev.png"));
+        ImageIcon icPrevRoll = new ImageIcon(getClass().getResource("/icons/prevRoll.png"));
+        ImageIcon icPrevPress = new ImageIcon(getClass().getResource("/icons/prevClicked.png"));
+        ImageIcon icPause = new ImageIcon(getClass().getResource("/icons/pause.png"));
+        ImageIcon icPauseRoll = new ImageIcon(getClass().getResource("/icons/pauseRoll.png"));
+        ImageIcon icPausePress = new ImageIcon(getClass().getResource("/icons/pauseClicked.png"));
+        ImageIcon icNext = new ImageIcon(getClass().getResource("/icons/next.png"));
+        ImageIcon icNextRoll = new ImageIcon(getClass().getResource("/icons/nextRoll.png"));
+        ImageIcon icNextPress = new ImageIcon(getClass().getResource("/icons/nextClicked.png"));
+        ImageIcon icFav = new ImageIcon(getClass().getResource("/icons/fav.png"));
+        ImageIcon icFavRoll = new ImageIcon(getClass().getResource("/icons/favRoll.png"));
+        ImageIcon icFavPress = new ImageIcon(getClass().getResource("/icons/favClicked.png"));
+        ImageIcon icSave = new ImageIcon(getClass().getResource("/icons/saveset.png"));
+
         //Подготавливаем и добавляем иконки для переключателя ВКЛ/ВЫКЛ
         btOnOff.setBorder(null);
         btOnOff.setContentAreaFilled(false);
-        btOnOff.setIcon(new ImageIcon("WS2812B_Controller/icons/switchOFF.png"));
-        btOnOff.setSelectedIcon(new ImageIcon("WS2812B_Controller/icons/switchON.png"));
+
+
+        btOnOff.setIcon(icOff);
+        btOnOff.setSelectedIcon(icOn);
 
         //Подготавливаем и добавляем иконки для кнопки Назад
         btPrev.setBorder(null);
         btPrev.setContentAreaFilled(false);
-        btPrev.setIcon(new ImageIcon("WS2812B_Controller/icons/prev.png"));
+        btPrev.setIcon(icPrev);
+        btPrev.setRolloverIcon(icPrevRoll);
+        btPrev.setPressedIcon(icPrevPress);
 
         //Подготавливаем и добавляем иконки для кнопки Пауза
         btPause.setBorder(null);
         btPause.setContentAreaFilled(false);
-        btPause.setIcon(new ImageIcon("WS2812B_Controller/icons/pause.png"));
+        btPause.setIcon(icPause);
+        btPause.setPressedIcon(icPauseRoll);
+        btPause.setRolloverIcon(icPausePress);
 
         //Подготавливаем и добавляем иконки для кнопки Вперёд
         btNext.setBorder(null);
         btNext.setContentAreaFilled(false);
-        btNext.setIcon(new ImageIcon("WS2812B_Controller/icons/next.png"));
+        btNext.setIcon(icNext);
+        btNext.setRolloverIcon(icNextRoll);
+        btNext.setPressedIcon(icNextPress);
 
         //Подготавливаем и добавляем иконки для кнопки "Добавить в избранное"
         btAddToFav.setBorder(null);
         btAddToFav.setContentAreaFilled(false);
-        btAddToFav.setIcon(new ImageIcon("WS2812B_Controller/icons/fav.png"));
+        btAddToFav.setIcon(icFav);
+        btAddToFav.setRolloverIcon(icFavRoll);
+        btAddToFav.setPressedIcon(icFavPress);
 
         //Подготавливаем и добавляем иконки для кнопки сохранения настроек
         btSaveSettings.setBorder(null);
         btSaveSettings.setContentAreaFilled(false);
-        btSaveSettings.setIcon(new ImageIcon("WS2812B_Controller/icons/saveset.png"));
+        btSaveSettings.setIcon(icSave);
 
         //Добавляем компоненты на панель #1, добавляем отступы
         mainControlPan.add(Box.createHorizontalStrut(15));
@@ -341,7 +365,7 @@ public class MainFrame {
         new UIUpdater().execute();
     }
 
-   /*********Слушатель для выпадающего списка COM-порртов*********/
+   //Слушатель для выпадающего списка COM-порртов
     private class CombComMouseListener implements MouseListener{
         @Override
         public void mouseClicked(MouseEvent e){}
@@ -373,7 +397,7 @@ public class MainFrame {
         public void mousePressed(MouseEvent e) {}
     }
 
-    /*************Слушатель кнопки подключения*************/
+    //Слушатель кнопки подключения
     private class ButtonConnectListener implements ActionListener {
         public void actionPerformed(ActionEvent e) throws NullPointerException {
 
@@ -393,7 +417,7 @@ public class MainFrame {
         }
     }
 
-    /*************Слушатель кнопки отключения*************/
+    //Слушатель кнопки отключения
     private class ButtonDisconnectListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -410,26 +434,16 @@ public class MainFrame {
         }
     }
 
-    /************Слушатель кнопки ВКЛ/ВЫКЛ*****************/
+    //Слушатель кнопки ВКЛ/ВЫКЛ
     private class ButtonOnOffListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
 
             Main.sendData(ON_OFF);
         }
-
-//        AbstractButton abstractButton = (AbstractButton) e.getSource();
-//        boolean selected = abstractButton.getModel().isSelected();
-//        if(selected){
-//            enableAll();
-//        }
-//        else {
-//            disableAll();
-//        }
-//    }
 }
 
-    /**********Слушатель для кнопки "Назад"************/
+    //Слушатель для кнопки "Назад"
     private class ButtonPrevListener implements ActionListener{
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -439,7 +453,7 @@ public class MainFrame {
         }
     }
 
-    /**********Слушатель для кнопки "Пауза"************/
+    //Слушатель для кнопки "Пауза"
     private class ButtonPauseListener implements ActionListener{
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -447,7 +461,7 @@ public class MainFrame {
         }
     }
 
-    /**********Слушатель для кнопки "Вперёд"************/
+    //Слушатель для кнопки "Вперёд"
     private class ButtonNextListener implements ActionListener{
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -455,7 +469,7 @@ public class MainFrame {
         }
     }
 
-    /**********Слушатель для кнопки "Добавить в избранное"************/
+    //Слушатель для кнопки "Добавить в избранное"
     private class ButtonFavoriteListener implements ActionListener{
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -463,7 +477,7 @@ public class MainFrame {
         }
     }
 
-    /**********Слушатель для кнопки "Сохранить настройки"************/
+    //Слушатель для кнопки "Сохранить настройки"
     private class ButtonSaveSetListener implements ActionListener{
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -471,7 +485,7 @@ public class MainFrame {
         }
     }
 
-    /*********Слушатель для изменения списка режимов*********/
+    //Слушатель для изменения списка режимов
     private class ModesListItemListener implements ItemListener{
         //Переменная индекса чекбоса, значения активности режима (1 - добавить в список/активен, 0 - удалить из списка/деактивирован
         byte index;
@@ -496,7 +510,7 @@ public class MainFrame {
         }
     }
 
-    /*********Слушатель для слайдера яркости(реализован через ивенты мыши)*********/
+    //Слушатель для слайдера яркости(реализован через ивенты мыши)
     private class BrightMouseListener implements MouseListener{
         @Override
         public void mouseEntered(MouseEvent e) {        }
@@ -515,7 +529,7 @@ public class MainFrame {
         public void mousePressed(MouseEvent e) {        }
     }
 
-    /*********Слушатель для слайдера скорости(реализован через ивенты мыши)*********/
+    //Слушатель для слайдера скорости(реализован через ивенты мыши)
     private class SpeedMouseListener implements MouseListener{
         @Override
         public void mouseEntered(MouseEvent e) {        }
@@ -539,7 +553,7 @@ public class MainFrame {
         public void mousePressed(MouseEvent e) {        }
     }
 
-    /*********Слушаель для чекбокса "Авто"****************/
+    //Слушаель для чекбокса "Авто"
     private class AutoModeItemListener implements ItemListener{
         @Override
         public void itemStateChanged(ItemEvent e) {
@@ -555,7 +569,7 @@ public class MainFrame {
         }
     }
 
-    /********Слушатель для кнопки "Цвет"*****************/
+    //Слушатель для кнопки "Цвет"
     private class ButtonColorListener implements ActionListener{
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -575,7 +589,7 @@ public class MainFrame {
         }
     }
 
-    /********Фоновый поток для обновления данных GUI***********/
+    //Фоновый поток для обновления данных GUI
     private class UIUpdater extends SwingWorker<Void, Integer>{
         @Override
         protected Void doInBackground() {
@@ -594,7 +608,7 @@ public class MainFrame {
         }
     }
 
-    /*************Отдельный поток для работы с подключением к клиенту*************/
+    //Отдельный поток для работы с подключением к клиенту
     private class TryToConnect extends SwingWorker<Boolean, Integer>{
         int i = 0;
 
@@ -649,7 +663,7 @@ public class MainFrame {
     }
     }
 
-    /*******Метод, который обновляет ГПИ в соответствии с принятыми данными от ардуины************/
+   //Метод, который обновляет ГПИ в соответствии с принятыми данными от ардуины
     private void syncGUI(int... recivedData) throws ArrayIndexOutOfBoundsException{
         jtxStatus.setBackground(Color.WHITE);
         try {
@@ -730,6 +744,7 @@ public class MainFrame {
                 case SET_COLOR:
                     lblCurModeName.setText("Произвольный цвет");
                     lblCurNumOfModes.setText("");
+                    speed.setEnabled(false);
                     jtxStatus.setText("Цвет ленты установлен в R: " + recivedData[1] + ", G: " + recivedData[2] + ", B: " + recivedData[3]);
                     break;
 
@@ -761,7 +776,7 @@ public class MainFrame {
 
     }
 
-    /*******Инициализация ГПИ начальными значениями, полученными от дуины********/
+    //Инициализация ГПИ начальными значениями, полученными от дуины
     private void initializeGUI(int[] recivedData) throws  ArrayIndexOutOfBoundsException{
         //Вывод системной информации
         jtxStatus.setText("Подключено к " + Main.com + " на скорости " + Main.baudRate);
@@ -811,7 +826,7 @@ public class MainFrame {
         readyActDeactMode = true;
     }
 
-    /*****Метод для отключения всех компонентов при первом запуске и при нажатии на кнопку "ВЫКЛ"***/
+    //Метод для отключения всех компонентов при первом запуске и при нажатии на кнопку "ВЫКЛ"
     private void disableAll(){
         //Панель управления
         if (!Main.isConnected) {
@@ -844,7 +859,7 @@ public class MainFrame {
 
     }
 
-    /*****Метод для включения всех компонентов при удачном получении настроек и при нажатии на кнопку "ВКЛ"***/
+    //Метод для включения всех компонентов при удачном получении настроек и при нажатии на кнопку "ВКЛ"
     private void enableAll(){
         //Верхняя панель
         btDisconnect.setEnabled(true);
