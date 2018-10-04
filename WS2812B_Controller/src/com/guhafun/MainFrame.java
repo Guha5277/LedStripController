@@ -361,8 +361,6 @@ public class MainFrame {
         frame.setResizable(false);
         frame.setVisible(true);
 
-        //Запускаем фоновый поток, отслеживающий приходящие данные и изменяющий, в соответствии с ними, ГПИ
-        new UIUpdater().execute();
     }
 
    //Слушатель для выпадающего списка COM-порртов
@@ -404,6 +402,7 @@ public class MainFrame {
             btConnect.setEnabled(false);
             combCom.setEnabled(false);
             combBaud.setEnabled(false);
+
             try {
                 Main.openPort(combCom.getSelectedItem().toString(), (Integer) combBaud.getSelectedItem());
             } catch (NullPointerException ne) {
@@ -411,8 +410,12 @@ public class MainFrame {
             }
             System.out.println(Main.com + " " + Main.baudRate);
 
+            //Поток подключения в котором проихсодит попытка установить соединение
             TryToConnect ttc = new TryToConnect();
             ttc.execute();
+
+            //Запускаем фоновый поток, отслеживающий приходящие данные и изменяющий, в соответствии с ними, ГПИ
+            new UIUpdater().execute();
 
         }
     }
@@ -422,15 +425,7 @@ public class MainFrame {
         @Override
         public void actionPerformed(ActionEvent e) {
             Main.disconnect();
-
-            btConnect.setEnabled(true);
-            combCom.setEnabled(true);
-            combBaud.setEnabled(true);
-            btDisconnect.setEnabled(false);
-
             disableAll();
-
-
         }
     }
 
@@ -590,21 +585,27 @@ public class MainFrame {
     }
 
     //Фоновый поток для обновления данных GUI
-    private class UIUpdater extends SwingWorker<Void, Integer>{
+    private class UIUpdater extends SwingWorker<Void, Integer> {
         @Override
         protected Void doInBackground() {
-            while(true) {
+            while(Main.isConnected) {
                 if (Main.isRecponceRecived) {
                     Main.isRecponceRecived = false;
                     syncGUI(Main.returnRecivedData());
                 }
                 try {
-                    Thread.sleep(100);
-                }catch (Exception e){
+                    Thread.sleep(300);
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
-            }
 
+                Main.connectCounter++;
+                if(Main.connectCounter == 16){
+                    Main.disconnect();
+                    disableAll();
+                }
+            }
+            return null;
         }
     }
 
@@ -616,13 +617,13 @@ public class MainFrame {
         public Boolean doInBackground() throws Exception {
             Main.sendData(CONNECT);
             Thread.sleep(200);
-            for (i = 0; i < 10; i++){
+            for (i = 1; i < 11; i++){
                     publish(i);             //методом publish() можно передавать промежуточные результаты работы в метод process()
                 if (Main.isConnected){
                     return true;
                 }
-                Main.sendData(CONNECT);
 
+                Main.sendData(CONNECT);
                 Thread.sleep(500);
             }
             return false;
@@ -642,15 +643,16 @@ public class MainFrame {
            try{
                result = this.get();   //спомощью метода get() можно узнать, какое значение было возвращено методом doInBackground()
                if(result){
-                   enableAll();
+
                    initializeGUI(Main.returnRecivedData());
                }
                else {
                    Main.disconnect();
 
-                   combCom.setEnabled(true);
-                   combBaud.setEnabled(true);
-                   btConnect.setEnabled(true);
+//                   combCom.setEnabled(true);
+//                   combBaud.setEnabled(true);
+//                   btConnect.setEnabled(true);
+
                    jtxStatus.setText("Ошибка подключения!");
                    jtxStatus.setBackground(Color.RED);
                }
@@ -799,6 +801,7 @@ public class MainFrame {
         //Применение настроек - установка состояния интерфейса в зависимости от состояния ленты
         if (ledMode > 0) {
             btOnOff.setSelected(true);
+            enableAll();
         }
         else{
             btOnOff.setSelected(false);
@@ -828,10 +831,16 @@ public class MainFrame {
 
     //Метод для отключения всех компонентов при первом запуске и при нажатии на кнопку "ВЫКЛ"
     private void disableAll(){
-        //Панель управления
+        //Если нет подключения, то отключаем все компоненты, включаем компоненты подключения
         if (!Main.isConnected) {
+            btConnect.setEnabled(true);
+            combCom.setEnabled(true);
+            combBaud.setEnabled(true);
+            btDisconnect.setEnabled(false);
             btOnOff.setEnabled(false);
         }
+
+        btOnOff.setEnabled(true);
         lblCurModeName.setEnabled(false);
         lblCurNumOfModes.setEnabled(false);
         btPrev.setEnabled(false);

@@ -8,6 +8,7 @@ public class Main {
 
     private static SerialPort serialPort;               //Объект через который будут происходить все манипуляции с COM-портом
     public static boolean isConnected = false;          //Флаг подключения
+    public static byte connectCounter = 5;
     public static boolean isRecponceRecived = false;    //Флаг получения ответа
 
     public static String com = "";              //Имя нашего ком-порта
