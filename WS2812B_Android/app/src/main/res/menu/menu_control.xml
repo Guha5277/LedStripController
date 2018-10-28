@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/swtOnOff"
+        android:title="@string/swtOnOff"
+        app:actionLayout="@layout/switch_item"
+        app:showAsAction="always" />
+</menu>

@@ -6,4 +6,5 @@
 
     <string name="pairedDevices">List of Paired Devices</string>
     <string name="discoveredDevices">List of Discovered Devices</string>
+    <string name="swtOnOff">Switch</string>
 </resources>

@@ -12,6 +12,8 @@ import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -23,13 +25,14 @@ import java.util.Arrays;
 
 public class ControlActivity extends AppCompatActivity {
 
+    Menu controlMenu;
     Button btnConnect;
 
     private static BluetoothSocket mmSocket = null;
     private static OutputStream mOutputStream;
     private static InputStream mIntputStream;
 
-    protected static boolean isNeedToStopInputThread = false;
+    protected static boolean isNeedToStopInputThread = true;
 
     private int reconnectCount = 1;
 
@@ -194,8 +197,40 @@ public class ControlActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
+        isNeedToStopInputThread = true;
         closeSocket();
     }
+
+    //Основное меню приложения - включени/выключение ленты
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        controlMenu = menu;
+        getMenuInflater().inflate(R.menu.menu_control, menu);
+        if(!isNeedToStopInputThread) {
+            controlMenu.findItem(R.id.btnRefresh).setEnabled(true);
+        }
+        else{
+            controlMenu.findItem(R.id.btnRefresh).setEnabled(false);
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    //Обработка нажатий на элементы меню
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item){
+        switch(item.getItemId()){
+            case R.id.btnConnect:
+                onOff();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    //Метод включения/выключения ленты
+    private void onOff(){
+
+    }
+
 }
 
 
@@ -214,7 +249,7 @@ class InputThread extends Thread{
             try{
                 if(inputStream.available() > 0){
                                         try {
-                        Thread.sleep(100);
+                        Thread.sleep(10);
                     }catch (InterruptedException ie){
                         Log.e(TAG, "ControlActivity: Ошибка приостановки потока!", ie);
                     }

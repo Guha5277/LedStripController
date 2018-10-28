@@ -155,9 +155,6 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver(btStateChangeBR, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
         IntentFilter fdsfds = new IntentFilter();
 
-
-
-
         Log.d(TAG, "MainActivity создано");
     }
 
@@ -181,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
 
                     //Создаем диалог информирующий пользователя о инициации подключения
                     mProgressDialog = new ProgressDialog(MainActivity.this);
-                    mProgressDialog.setCancelable(false);
+                    mProgressDialog.setCancelable(true);
                     mProgressDialog.setTitle("Подключение");
                     mProgressDialog.setMessage("Подключаюсь к " + device.getName());
                     mProgressDialog.show();

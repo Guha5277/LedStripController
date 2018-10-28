@@ -3,4 +3,5 @@
     <string name="app_name">WS2812B Controller</string>
     <string name="discoveredDevices">Найденные устройства</string>
     <string name="pairedDevices">Сопряженные устройства</string>
+    <string name="swtOnOff">Переключатель</string>
 </resources>
