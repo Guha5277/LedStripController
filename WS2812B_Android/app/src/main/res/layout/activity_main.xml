@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:theme="@style/AppTheme"
-    tools:context=".MainActivity">
+    tools:context="com.guhafun.ws2812bcontroller.MainActivity">
 
     <ListView
         android:id="@+id/pairedDevList"

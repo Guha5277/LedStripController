@@ -14,7 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".MainActivity"
+            android:name="com.guhafun.ws2812bcontroller.MainActivity"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme">
             <intent-filter>
@@ -24,7 +24,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ControlActivity"
+            android:name="com.guhafun.ws2812bcontroller.ControlActivity"
             android:screenOrientation="portrait">
         </activity>
     </application>

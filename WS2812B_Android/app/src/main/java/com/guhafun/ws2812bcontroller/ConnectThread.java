@@ -1,9 +1,7 @@
-package com.example.ws2812bcontroller;
+package com.guhafun.ws2812bcontroller;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
-import android.content.Intent;
 import android.os.Handler;
 import android.util.Log;
 
