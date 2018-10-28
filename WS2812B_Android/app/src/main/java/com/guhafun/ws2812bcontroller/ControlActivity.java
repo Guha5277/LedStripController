@@ -12,14 +12,18 @@ import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
-
+import com.example.ws2812bcontroller.R;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
 public class ControlActivity extends AppCompatActivity {
+
+    Button btnConnect;
 
     private static BluetoothSocket mmSocket = null;
     private static OutputStream mOutputStream;
@@ -45,6 +49,18 @@ public class ControlActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_contlor);
+
+        btnConnect = findViewById(R.id.btnConnect);
+        btnConnect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!isNeedToStopInputThread){
+                    byte a = 0x01;
+                    writeData(a);
+                }
+            }
+        });
+
 
         //Получаем потоки
         getStreams();

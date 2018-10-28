@@ -30,6 +30,8 @@ import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.ws2812bcontroller.R;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
@@ -154,15 +156,7 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter fdsfds = new IntentFilter();
 
 
-        //Регистррируем слушателя уведомляющих о этапах поиска устройств и найденных устройствах
-        registerReceiver(discoveryBR, new IntentFilter(BluetoothDevice.ACTION_FOUND));
-        registerReceiver(discoveryBR, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED));
-        registerReceiver(discoveryBR, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED));
 
-
-        //Задаем слушателя для событий нажатия на элементы списка
-        pairedListView.setOnItemClickListener(itemClickListener);
-        discoveredListView.setOnItemClickListener(itemClickListener);
 
         Log.d(TAG, "MainActivity создано");
     }
@@ -412,11 +406,36 @@ private void updateListView(SimpleAdapter adapter, boolean isNeedToUpdateList, b
 }
 
     @Override
-    protected void onDestroy(){
-        super.onDestroy();
+    protected void onStop() {
+        super.onStop();
         //Убираем слушателя изменений состояния блютуз
         unregisterReceiver(btStateChangeBR);
         unregisterReceiver(discoveryBR);
+        Log.d(TAG, "MainActivity остановлено");
+
+    }
+
+    @Override
+    protected void onPostResume() {
+        super.onPostResume();
+
+        //Регистррируем слушателя уведомляющих о этапах поиска устройств и найденных устройствах
+        registerReceiver(discoveryBR, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+        registerReceiver(discoveryBR, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED));
+        registerReceiver(discoveryBR, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED));
+
+        //Задаем слушателя для событий нажатия на элементы списка
+        pairedListView.setOnItemClickListener(itemClickListener);
+        discoveredListView.setOnItemClickListener(itemClickListener);
+        Log.d(TAG, "MainActivity возобновлено");
+    }
+
+    @Override
+    protected void onDestroy(){
+        super.onDestroy();
+        //Убираем слушателя изменений состояния блютуз
+//        unregisterReceiver(btStateChangeBR);
+//        unregisterReceiver(discoveryBR);
 
         Log.d(TAG, "MainActivity уничтожено");
     }
