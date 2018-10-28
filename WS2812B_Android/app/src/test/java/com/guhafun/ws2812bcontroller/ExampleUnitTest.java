@@ -1,4 +1,4 @@
-package com.example.ws2812bcontroller;
+package com.guhafun.ws2812bcontroller;
 
 import org.junit.Test;
 
