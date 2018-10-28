@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WS2812B Controller</string>
+    <string name="discoveredDevices">Найденные устройства</string>
+    <string name="pairedDevices">Сопряженные устройства</string>
+</resources>

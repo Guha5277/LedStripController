@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">WS2812B Controller</string>
+    <string name="header_title" translatable="false">Header</string>
+    <string name="item1" translatable="false">Item 1</string>
+    <string name="item2" translatable="false">Item 2</string>
+
+    <string name="pairedDevices">List of Paired Devices</string>
+    <string name="discoveredDevices">List of Discovered Devices</string>
+</resources>
