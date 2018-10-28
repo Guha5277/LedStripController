@@ -4,4 +4,8 @@
     <string name="discoveredDevices">Найденные устройства</string>
     <string name="pairedDevices">Сопряженные устройства</string>
     <string name="swtOnOff">Переключатель</string>
+    <string name="btnConnect">Подключение</string>
+    <string name="btnNext">Кнопка вперед</string>
+    <string name="btnPrev">Кнопка назад</string>
+    <string name="btnPause">Кнопка пауза</string>
 </resources>

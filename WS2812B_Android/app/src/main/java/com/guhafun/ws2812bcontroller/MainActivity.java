@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Проверяем, поддерживает ли устройство функцию блютуз вообще...
         //... если поддержка есть, то заправшиваем у пользователя включение блютуз
-        if (bluetoothLocal != null){
+        if (bluetoothLocal != null) {
             requestBTEnable();
         }
         //... если его нет, то выводим сообщение об ошибке...
@@ -125,15 +125,15 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //Инициализация Handler'a
-        handler = new Handler(){
+        handler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
                 super.handleMessage(msg);
                 //По результатам сообщения(0 - ошибка подключения и 1 - соединение установлено...
-                switch(msg.what){
+                switch (msg.what) {
                     case 0:
                         //... В случае ошибки подключения, закрываем диалог и выводим сообщение об ошибке
-                        if(mProgressDialog != null && mProgressDialog.isShowing()){
+                        if (mProgressDialog != null && mProgressDialog.isShowing()) {
                             mProgressDialog.dismiss();
                             Toast.makeText(MainActivity.this, "Не удалось установить соединение!", Toast.LENGTH_SHORT).show();
                             Log.d(TAG, "MainActivity: Не удалось установить соединение! Проверьте доступность Bluetooth-устройства");
@@ -143,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
                         //... В случае успешного подключения, закрываем диалог и вызываем ControlActivity
                         Intent intent = new Intent(MainActivity.this, ControlActivity.class);
                         startActivity(intent);
-                        if(mProgressDialog != null && mProgressDialog.isShowing()) {
+                        if (mProgressDialog != null && mProgressDialog.isShowing()) {
                             mProgressDialog.dismiss();
                         }
                         break;
@@ -153,7 +153,10 @@ public class MainActivity extends AppCompatActivity {
 
         //Регистрируем слушателя изменений состояния блютуз
         registerReceiver(btStateChangeBR, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
-        IntentFilter fdsfds = new IntentFilter();
+
+        //Задаем слушателя для событий нажатия на элементы списка
+        pairedListView.setOnItemClickListener(itemClickListener);
+        discoveredListView.setOnItemClickListener(itemClickListener);
 
         Log.d(TAG, "MainActivity создано");
     }
@@ -166,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
             String adapterName = itemHashMap.get(ADAPTER_NAME);
             String adapterMac = itemHashMap.get(ADAPTER_MAC);
 
-            if (BluetoothAdapter.checkBluetoothAddress(adapterMac)){
+            if (BluetoothAdapter.checkBluetoothAddress(adapterMac)) {
                 Log.d(TAG, "MainActivity: MAC-адресс: " + adapterMac + " имеет валидный формат!");
                 BluetoothDevice device = bluetoothLocal.getRemoteDevice(adapterMac);
                 Log.d(TAG, "MainActivity: Bluetooth устройство: " + device.getName() + ", MAC: " + device.getAddress() + " успешно инициализировано!");
@@ -174,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
 
                 //Проверяем, включен ли блютуз перед подключением
                 if (bluetoothLocal.isEnabled()) {
-                    Log.d(TAG, "MainActivity: подключение к " + device.getName() + ", " + device.getAddress() + "..." );
+                    Log.d(TAG, "MainActivity: подключение к " + device.getName() + ", " + device.getAddress() + "...");
 
                     //Создаем диалог информирующий пользователя о инициации подключения
                     mProgressDialog = new ProgressDialog(MainActivity.this);
@@ -185,13 +188,11 @@ public class MainActivity extends AppCompatActivity {
 
                     tryToConnect = new ConnectThread(device, handler);
                     tryToConnect.start();
-                }
-                else{
+                } else {
                     Log.d(TAG, "MainActivity: ошибка подключения к " + device.getName() + "! Bluetooth Adapter отключен!");
                     Toast.makeText(MainActivity.this, "Для подключения к устройству включите Bluetooth!", Toast.LENGTH_SHORT).show();
                 }
-            }
-            else{
+            } else {
                 Log.d(TAG, "MainActivity: MAC-адрес: " + adapterMac + "имеет неверный формат!");
             }
 
@@ -212,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //Иначе - запускаем процесс поиска новых устройств
-        else{
+        else {
             bluetoothLocal.startDiscovery();
         }
     }
@@ -226,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     bluetoothLocal.startDiscovery();
 
-                //Иначе - выводим всплывающее сообщение
+                    //Иначе - выводим всплывающее сообщение
                 } else {
                     Toast.makeText(this, "For start Discovery Devices Give the Location Permission", Toast.LENGTH_SHORT).show();
                 }
@@ -240,10 +241,9 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         myMenu = menu;
         getMenuInflater().inflate(R.menu.main, menu);
-        if(bluetoothLocal.isEnabled()) {
+        if (bluetoothLocal.isEnabled()) {
             myMenu.findItem(R.id.btnRefresh).setEnabled(true);
-        }
-        else{
+        } else {
             myMenu.findItem(R.id.btnRefresh).setEnabled(false);
         }
         return super.onPrepareOptionsMenu(menu);
@@ -251,8 +251,8 @@ public class MainActivity extends AppCompatActivity {
 
     //Обработка нажатий на элементы меню
     @Override
-    public boolean onOptionsItemSelected(MenuItem item){
-        switch(item.getItemId()){
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
             case R.id.btnRefresh:
                 checkLocationPermission();
                 break;
@@ -261,14 +261,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //Метод, который проверяет включен ли Bluetooth и если нет, то отправляет пользователю запрос на его включение
-    private void requestBTEnable(){
-        if(!bluetoothLocal.isEnabled()){
+    private void requestBTEnable() {
+        if (!bluetoothLocal.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
 
-        }
-        else{
+        } else {
             updateListOfDevices(pairedAdapter, null, pairedListView, false);
             //pairedTextView.setVisibility(View.VISIBLE);
         }
@@ -276,27 +275,27 @@ public class MainActivity extends AppCompatActivity {
 
     //Метод, который обрабатывает результаты вызова метода startActivityForResult     <---- нужно доработать requestCode(код запроса)
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data){
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         //Если пользователь включил блютуз, то происходит настройка ГПИ
-            if (resultCode == Activity.RESULT_OK) {
-                myMenu.findItem(R.id.btnRefresh).setEnabled(true);
-            } else if (resultCode == Activity.RESULT_CANCELED) {
-                myMenu.findItem(R.id.btnRefresh).setEnabled(false);
-                Toast.makeText(this, "Включите Bluetooth для продолжения работы с программой", Toast.LENGTH_SHORT).show();
-            }
+        if (resultCode == Activity.RESULT_OK) {
+            myMenu.findItem(R.id.btnRefresh).setEnabled(true);
+        } else if (resultCode == Activity.RESULT_CANCELED) {
+            myMenu.findItem(R.id.btnRefresh).setEnabled(false);
+            Toast.makeText(this, "Включите Bluetooth для продолжения работы с программой", Toast.LENGTH_SHORT).show();
         }
+    }
 
 
-//Слушатель уведомляющий о найденных устройствах
-BroadcastReceiver discoveryBR = new BroadcastReceiver() {
-    private final String DISCOVERY_STARTED = BluetoothAdapter.ACTION_DISCOVERY_STARTED;
-    private final String DISCOVERY_FINISHED = BluetoothAdapter.ACTION_DISCOVERY_FINISHED;
-    private final String DISCOVERY_FOUND = BluetoothDevice.ACTION_FOUND;
+    //Слушатель уведомляющий о найденных устройствах
+    BroadcastReceiver discoveryBR = new BroadcastReceiver() {
+        private final String DISCOVERY_STARTED = BluetoothAdapter.ACTION_DISCOVERY_STARTED;
+        private final String DISCOVERY_FINISHED = BluetoothAdapter.ACTION_DISCOVERY_FINISHED;
+        private final String DISCOVERY_FOUND = BluetoothDevice.ACTION_FOUND;
 
-    @Override
-    public void onReceive(Context context, Intent intent){
-        String action = intent.getAction();
-        if (action != null) {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action != null) {
                 switch (action) {
                     case DISCOVERY_STARTED:
                         countDevicesFound = 0;
@@ -319,95 +318,96 @@ BroadcastReceiver discoveryBR = new BroadcastReceiver() {
                 }
             }
 
-    }
-};
-
-//Слушатель изменения состояния Bluetooth
-BroadcastReceiver btStateChangeBR = new BroadcastReceiver() {
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        int ON = BluetoothAdapter.STATE_ON;
-        int OFF = BluetoothAdapter.STATE_OFF;
-        int currState = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1);
-        int prevState = intent.getIntExtra(BluetoothAdapter.EXTRA_PREVIOUS_STATE, -1);
-
-        //Если текущее состояние BT стало STATE_OFF а было STATE_ON, то выводим всплывающее собщение...
-        if (currState == OFF && prevState == ON){
-            //Обновляем список сопряженных устройств
-            updateListView(pairedAdapter,false,false, R.layout.header_deactivate,false, View.VISIBLE, Color.GRAY);
-
-            //Выводим всплывающее сообщение с предложением включить Bluetooth
-            Toast.makeText(MainActivity.this, "Для продолжения работы, включите Bluetooth!", Toast.LENGTH_SHORT).show();
         }
-        //Если текущее состояние BT стало STATE_ON..
-        if(currState == ON){
-            //Обновляем список сопряженных устройств
-            updateListView(pairedAdapter, true,true, R.layout.header,true, View.VISIBLE, Color.BLACK);
-        }
+    };
 
-    }
-};
+    //Слушатель изменения состояния Bluetooth
+    BroadcastReceiver btStateChangeBR = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int ON = BluetoothAdapter.STATE_ON;
+            int OFF = BluetoothAdapter.STATE_OFF;
+            int currState = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1);
+            int prevState = intent.getIntExtra(BluetoothAdapter.EXTRA_PREVIOUS_STATE, -1);
 
-//Метод который обновляет список устройств
-private void updateListOfDevices(SimpleAdapter adapter, BluetoothDevice device, ListView listView, boolean isNeedToClearList){
-    if(isNeedToClearList) {
-        //Очищаем хэш-таблицу со списком устройств, чтобы исключить клонирование элементов
-        pairedHashList.clear();
-    }
+            //Если текущее состояние BT стало STATE_OFF а было STATE_ON, то выводим всплывающее собщение...
+            if (currState == OFF && prevState == ON) {
+                //Обновляем список сопряженных устройств
+                updateListView(pairedAdapter, false, false, R.layout.header_deactivate, false, View.VISIBLE, Color.GRAY);
 
-    if(device == null) {
-        //Получаем список сопряженных устройств, хранящийся локально
-        Set<BluetoothDevice>  pairedDevice = bluetoothLocal.getBondedDevices();
-       // pairedDevCount = pairedDevice.
-    //перебираем список сопряженных устройств и добавляем их в хэш-таблицу
-        if (pairedDevice.size() == 0){
-            pairedTextView.setVisibility(View.INVISIBLE);
-            pairedTextView.setPadding(0,0,0,0);
-            pairedTextView.setHeight(0);
-        }
-        else {
-            pairedTextView.setVisibility(View.VISIBLE);
-            for (BluetoothDevice mDevice : pairedDevice) {
-                hashMap = new HashMap<>();
-                hashMap.put(ADAPTER_NAME, mDevice.getName());
-                hashMap.put(ADAPTER_MAC, mDevice.getAddress());
-                pairedHashList.add(hashMap);
+                //Выводим всплывающее сообщение с предложением включить Bluetooth
+                Toast.makeText(MainActivity.this, "Для продолжения работы, включите Bluetooth!", Toast.LENGTH_SHORT).show();
             }
+            //Если текущее состояние BT стало STATE_ON..
+            if (currState == ON) {
+                //Обновляем список сопряженных устройств
+                updateListView(pairedAdapter, true, true, R.layout.header, true, View.VISIBLE, Color.BLACK);
+            }
+
         }
+    };
+
+    //Метод который обновляет список устройств
+    private void updateListOfDevices(SimpleAdapter adapter, BluetoothDevice device, ListView listView, boolean isNeedToClearList) {
+        if (isNeedToClearList) {
+            //Очищаем хэш-таблицу со списком устройств, чтобы исключить клонирование элементов
+            pairedHashList.clear();
+        }
+
+        if (device == null) {
+            //Получаем список сопряженных устройств, хранящийся локально
+            Set<BluetoothDevice> pairedDevice = bluetoothLocal.getBondedDevices();
+            // pairedDevCount = pairedDevice.
+            //перебираем список сопряженных устройств и добавляем их в хэш-таблицу
+            if (pairedDevice.size() == 0) {
+                pairedTextView.setVisibility(View.INVISIBLE);
+                pairedTextView.setPadding(0, 0, 0, 0);
+                pairedTextView.setHeight(0);
+            } else {
+                pairedTextView.setVisibility(View.VISIBLE);
+                for (BluetoothDevice mDevice : pairedDevice) {
+                    hashMap = new HashMap<>();
+                    hashMap.put(ADAPTER_NAME, mDevice.getName());
+                    hashMap.put(ADAPTER_MAC, mDevice.getAddress());
+                    pairedHashList.add(hashMap);
+                }
+            }
+        } else {
+            hashMap = new HashMap<>();
+            hashMap.put(ADAPTER_NAME, device.getName());
+            hashMap.put(ADAPTER_MAC, device.getAddress());
+            pairedHashList.add(hashMap);
+        }
+
+        listView.setAdapter(adapter);
+        //Уведомляем адаптер об изменении списка
+        adapter.notifyDataSetChanged();
     }
-    else {
-        hashMap = new HashMap<>();
-        hashMap.put(ADAPTER_NAME, device.getName());
-        hashMap.put(ADAPTER_MAC,  device.getAddress());
-        pairedHashList.add(hashMap);
+
+    private void updateListView(SimpleAdapter adapter, boolean isNeedToUpdateList, boolean isNeedToClearList, int layoutResourceID, boolean setEnabled, int visible, int setColor) {
+
+        if (isNeedToUpdateList) {
+            updateListOfDevices(adapter, null, pairedListView, isNeedToClearList);
+        }
+
+        //pairedHashList.clear();
+        adapter = new SimpleAdapter(MainActivity.this, pairedHashList, layoutResourceID, new String[]{ADAPTER_NAME, ADAPTER_MAC}, new int[]{R.id.listTitle, R.id.listContent});
+        pairedListView.setAdapter(adapter);
+        pairedListView.setEnabled(setEnabled);
+        pairedTextView.setTextColor(setColor);
+        // pairedTextView.setVisibility(visible);
+        myMenu.findItem(R.id.btnRefresh).setEnabled(setEnabled);
     }
-
-    listView.setAdapter(adapter);
-    //Уведомляем адаптер об изменении списка
-    adapter.notifyDataSetChanged();
-}
-
-private void updateListView(SimpleAdapter adapter, boolean isNeedToUpdateList, boolean isNeedToClearList, int layoutResourceID, boolean setEnabled, int visible, int setColor){
-
-    if(isNeedToUpdateList) {
-        updateListOfDevices(adapter, null, pairedListView, isNeedToClearList);
-    }
-
-    //pairedHashList.clear();
-    adapter = new SimpleAdapter(MainActivity.this, pairedHashList, layoutResourceID, new String[]{ADAPTER_NAME, ADAPTER_MAC}, new int[]{R.id.listTitle, R.id.listContent});
-    pairedListView.setAdapter(adapter);
-    pairedListView.setEnabled(setEnabled);
-    pairedTextView.setTextColor(setColor);
-   // pairedTextView.setVisibility(visible);
-    myMenu.findItem(R.id.btnRefresh).setEnabled(setEnabled);
-}
 
     @Override
     protected void onStop() {
         super.onStop();
+
         //Убираем слушателя изменений состояния блютуз
         unregisterReceiver(btStateChangeBR);
         unregisterReceiver(discoveryBR);
+
+        Log.d(TAG, "MainActivity BoadcastReceiver деактивирован");
         Log.d(TAG, "MainActivity остановлено");
 
     }
@@ -421,9 +421,7 @@ private void updateListView(SimpleAdapter adapter, boolean isNeedToUpdateList, b
         registerReceiver(discoveryBR, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED));
         registerReceiver(discoveryBR, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED));
 
-        //Задаем слушателя для событий нажатия на элементы списка
-        pairedListView.setOnItemClickListener(itemClickListener);
-        discoveredListView.setOnItemClickListener(itemClickListener);
+
         Log.d(TAG, "MainActivity возобновлено");
     }
 

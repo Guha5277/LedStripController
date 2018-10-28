@@ -7,4 +7,8 @@
     <string name="pairedDevices">List of Paired Devices</string>
     <string name="discoveredDevices">List of Discovered Devices</string>
     <string name="swtOnOff">Switch</string>
+    <string name="btnConnect">Connect</string>
+    <string name="btnNext">Button Next</string>
+    <string name="btnPrev">Button prevision</string>
+    <string name="btnPause">Button Pause</string>
 </resources>

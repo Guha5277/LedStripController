@@ -32,7 +32,7 @@ public class ControlActivity extends AppCompatActivity {
     private static OutputStream mOutputStream;
     private static InputStream mIntputStream;
 
-    protected static boolean isNeedToStopInputThread = true;
+    protected static boolean isNeedToStopInputThread = false;
 
     private int reconnectCount = 1;
 
@@ -106,6 +106,7 @@ public class ControlActivity extends AppCompatActivity {
         registerReceiver(connectionStatusChanged, new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED));
         registerReceiver(connectionStatusChanged, new IntentFilter(BluetoothDevice.ACTION_ACL_CONNECTED));
 
+        isNeedToStopInputThread = false;
         InputThread inThread = new InputThread(mIntputStream);
         inThread.start();
 
@@ -207,10 +208,12 @@ public class ControlActivity extends AppCompatActivity {
         controlMenu = menu;
         getMenuInflater().inflate(R.menu.menu_control, menu);
         if(!isNeedToStopInputThread) {
-            controlMenu.findItem(R.id.btnRefresh).setEnabled(true);
+            controlMenu.findItem(R.id.swtOnOff).setEnabled(true);
+            controlMenu.findItem(R.id.swtOnOff).setChecked(true);
         }
         else{
-            controlMenu.findItem(R.id.btnRefresh).setEnabled(false);
+            controlMenu.findItem(R.id.swtOnOff).setEnabled(false);
+            controlMenu.findItem(R.id.swtOnOff).setChecked(false);
         }
         return super.onPrepareOptionsMenu(menu);
     }
