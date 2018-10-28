@@ -108,10 +108,10 @@ void loop() {
     }
   }
 
-  if (millis() - last_change2 > change_time2){
-    last_change2 = millis();
-    Serial.write(100);
-  }
+//  if (millis() - last_change2 > change_time2){
+//    last_change2 = millis();
+//    Serial.write(100);
+//  }
 
   switch (ledMode) {
     case 99: break;                           // пазуа
