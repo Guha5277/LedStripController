@@ -1,6 +1,7 @@
 package com.guhafun.ws2812bcontroller;
 
 
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
@@ -15,7 +16,9 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.Toast;
 import com.example.ws2812bcontroller.R;
 import java.io.IOException;
@@ -25,8 +28,21 @@ import java.util.Arrays;
 
 public class ControlActivity extends AppCompatActivity {
 
+    //Строковый массив данных, содержащий названия режимов ленты.
+    private String[] modeNames = {"Rainbow Fade", "Rainbow Loop", "Random Burst", "Color Bounce", "Color Bounce Fade", "EMS Light One",
+            "EMS Light ALL", "Flicker", "Pulse One Color", "Pulse with change color", "Fade Vertical", "Rule 30",
+            "Random March", "RWB March", "Radiation", "Color Loop Verdelay", "White Temps", "Sin Bright Wave",
+            "Pop Horizontal", "Quad Bright Cirve", "Flame", "Rainbow Vertical", "Pacman", "Random Color Pop",
+            "EMS Lights Strobe", "RGB Propeller", "Kitt", "Matrix", "NEW! Rainbow Loop", "Color Wipe",
+            "Cylon Bounce", "Fire", "Rainbow Cycle", "Twinkle Random", "Running Lights", "Sparkle",
+            "Snow Sparkle", "Theater Chase", "Theater Chase Rainbow", "Strobe", "Bouncing Ball", "Bouncing Colored Ball",
+            "Red", "Green", "Blue", "Yellow", "Cyan", "Purple", "White"};
+
+    ListView choiceModeList;
+
     Menu controlMenu;
     Button btnConnect;
+    ProgressDialog mProgressDialog = null;
 
     private static BluetoothSocket mmSocket = null;
     private static OutputStream mOutputStream;
@@ -53,16 +69,22 @@ public class ControlActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_contlor);
 
-        btnConnect = findViewById(R.id.btnConnect);
-        btnConnect.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!isNeedToStopInputThread){
-                    byte a = 0x01;
-                    writeData(a);
-                }
-            }
-        });
+        choiceModeList = findViewById(R.id.modeListView);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_multiple_choice, modeNames);
+        choiceModeList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+        choiceModeList.setAdapter(adapter);
+
+       // btnConnect = findViewById(R.id.btnConnect);
+//        btnConnect.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//              //  controlMenu.findItem(R.id.swtOnOff).setChecked(!controlMenu.getItem(R.id.swtOnOff).isChecked());
+//                if (!isNeedToStopInputThread){
+//                    byte a = 0x01;
+//                    writeData(a);
+//                }
+//            }
+//        });
 
 
         //Получаем потоки
@@ -109,6 +131,7 @@ public class ControlActivity extends AppCompatActivity {
         isNeedToStopInputThread = false;
         InputThread inThread = new InputThread(mIntputStream);
         inThread.start();
+
 
         Log.d(TAG, "ControlActivity создано");
     }
@@ -207,13 +230,35 @@ public class ControlActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         controlMenu = menu;
         getMenuInflater().inflate(R.menu.menu_control, menu);
+
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        controlMenu = menu;
+
+        MenuItem item = menu.findItem(R.id.swtOnOff);
+        //MenuItem item2 = menu.getItem(R.id.swtOnOff);
+
         if(!isNeedToStopInputThread) {
-            controlMenu.findItem(R.id.swtOnOff).setEnabled(true);
-            controlMenu.findItem(R.id.swtOnOff).setChecked(true);
+            item.setChecked(true);
+            item.setEnabled(true);
+           // controlMenu.findItem(R.id.swtOnOff).setEnabled(true);
+           // controlMenu.findItem(R.id.swtOnOff).setEnabled(false);
+//            controlMenu.findItem(R.id.app_bar_switch).setCheckable(true);
+          //  controlMenu.findItem(R.id.swtOnOff).setChecked(true);
+
+
+
+            Log.d(TAG, "ControlActivity: !!!!!!!!!!!!!!!!!!!!!!!!!!");
         }
         else{
-            controlMenu.findItem(R.id.swtOnOff).setEnabled(false);
-            controlMenu.findItem(R.id.swtOnOff).setChecked(false);
+            item.setChecked(false);
+            item.setEnabled(false);
+//            controlMenu.findItem(R.id.app_bar_switch).setEnabled(false);
+//            controlMenu.findItem(R.id.app_bar_switch).setChecked(false);
         }
         return super.onPrepareOptionsMenu(menu);
     }
@@ -221,11 +266,11 @@ public class ControlActivity extends AppCompatActivity {
     //Обработка нажатий на элементы меню
     @Override
     public boolean onOptionsItemSelected(MenuItem item){
-        switch(item.getItemId()){
-            case R.id.btnConnect:
-                onOff();
-                break;
-        }
+//        switch(item.getItemId()){
+//            case R.id.btnConnect:
+//                onOff();
+//                break;
+//        }
         return super.onOptionsItemSelected(item);
     }
 

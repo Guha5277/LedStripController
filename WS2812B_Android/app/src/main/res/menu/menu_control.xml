@@ -6,8 +6,18 @@
     android:layout_width="match_parent"
     xmlns:android="http://schemas.android.com/apk/res/android">
     <item
+        android:id="@+id/button_save"
+        android:title="Favorite"
+        app:actionLayout="@layout/save_item"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/button_fav"
+        android:title="Favorite"
+        app:actionLayout="@layout/fav_item"
+        app:showAsAction="always" />
+    <item
         android:id="@+id/swtOnOff"
         android:title="@string/swtOnOff"
         app:actionLayout="@layout/switch_item"
-        app:showAsAction="always" />
+        app:showAsAction="always"></item>
 </menu>

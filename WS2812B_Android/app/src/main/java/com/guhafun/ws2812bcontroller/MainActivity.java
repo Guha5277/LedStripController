@@ -151,8 +151,6 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        //Регистрируем слушателя изменений состояния блютуз
-        registerReceiver(btStateChangeBR, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
 
         //Задаем слушателя для событий нажатия на элементы списка
         pairedListView.setOnItemClickListener(itemClickListener);
@@ -415,6 +413,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPostResume() {
         super.onPostResume();
+
+        //Регистрируем слушателя изменений состояния блютуз
+        registerReceiver(btStateChangeBR, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
 
         //Регистррируем слушателя уведомляющих о этапах поиска устройств и найденных устройствах
         registerReceiver(discoveryBR, new IntentFilter(BluetoothDevice.ACTION_FOUND));

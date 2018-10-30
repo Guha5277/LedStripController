@@ -3,11 +3,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <Switch
+    <ImageButton
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
         android:layout_marginLeft="@dimen/menu_item_margin"
-        android:layout_marginRight="@dimen/menu_item_margin" />
+        android:layout_marginRight="@dimen/menu_item_margin"
+        android:background="@android:drawable/ic_menu_save"
+        android:clickable="true" />
 </RelativeLayout>
