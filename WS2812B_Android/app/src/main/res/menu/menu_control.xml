@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_height="match_parent"
-    android:layout_width="match_parent"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+
     <item
         android:id="@+id/button_save"
-        android:title="Favorite"
+        android:title="Save"
         app:actionLayout="@layout/save_item"
         app:showAsAction="always" />
     <item
@@ -19,5 +17,6 @@
         android:id="@+id/swtOnOff"
         android:title="@string/swtOnOff"
         app:actionLayout="@layout/switch_item"
-        app:showAsAction="always"></item>
+        app:showAsAction="always">
+    </item>
 </menu>

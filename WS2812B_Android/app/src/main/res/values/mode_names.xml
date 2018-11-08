@@ -1,53 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="mode1" translatable="false">Rainbow Fade</string>
-    <string name="mode2" translatable="false">Rainbow Loop</string>
-    <string name="mode3" translatable="false">Random Burst</string>
-    <string name="mode4" translatable="false">Color Bounce</string>
-    <string name="mode5" translatable="false">Color Bounce Fade</string>
-    <string name="mode6" translatable="false">EMS Light One</string>
-    <string name="mode7" translatable="false">EMS Light ALL</string>
-    <string name="mode8" translatable="false">Flicker</string>
-    <string name="mode9" translatable="false">Pulse One Color</string>
-    <string name="mode10" translatable="false">Pulse with change color</string>
-    <string name="mode11" translatable="false">Fade Vertical</string>
-    <string name="mode12" translatable="false">Rule 30</string>
-    <string name="mode13" translatable="false">Random March</string>
-    <string name="mode14" translatable="false">RWB March</string>
-    <string name="mode15" translatable="false">Radiation</string>
-    <string name="mode16" translatable="false">Color Loop Verdelay</string>
-    <string name="mode17" translatable="false">White Temps</string>
-    <string name="mode18" translatable="false">Sin Bright Wave</string>
-    <string name="mode19" translatable="false">Pop Horizontal</string>
-    <string name="mode20" translatable="false">Quad Bright Cirve</string>
-    <string name="mode21" translatable="false">Flame</string>
-    <string name="mode22" translatable="false">Rainbow Vertical</string>
-    <string name="mode23" translatable="false">Pacman</string>
-    <string name="mode24" translatable="false">Random Color Pop</string>
-    <string name="mode25" translatable="false">EMS Lights Strobe</string>
-    <string name="mode26" translatable="false">RGB Propeller</string>
-    <string name="mode27" translatable="false">Kitt</string>
-    <string name="mode28" translatable="false">Matrix</string>
-    <string name="mode29" translatable="false">NEW! Rainbow Loop</string>
-    <string name="mode30" translatable="false">Color Wipe</string>
-    <string name="mode31" translatable="false">Cylon Bounce</string>
-    <string name="mode32" translatable="false">Fire</string>
-    <string name="mode33" translatable="false">Rainbow Cycle</string>
-    <string name="mode34" translatable="false">Twinkle Random</string>
-    <string name="mode35" translatable="false">Running Lights</string>
-    <string name="mode36" translatable="false">Sparkle</string>
-    <string name="mode37" translatable="false">Snow Sparkle</string>
-    <string name="mode38" translatable="false">Theater Chase</string>
-    <string name="mode39" translatable="false">Theater Chase Rainbow</string>
-    <string name="mode40" translatable="false">Strobe</string>
-    <string name="mode41" translatable="false">Bouncing Ball</string>
-    <string name="mode42" translatable="false">Bouncing Colored Ball</string>
-    <string name="mode43" translatable="false">Red</string>
-    <string name="mode44" translatable="false">Green</string>
-    <string name="mode45" translatable="false">Blue</string>
-    <string name="mode46" translatable="false">Yellow</string>
-    <string name="mode47" translatable="false">Cyan</string>
-    <string name="mode48" translatable="false">Purple</string>
-    <string name="mode49" translatable="false">White</string>
+    <string-array name="mode_list">
+        <item>Rainbow Fade</item>
+        <item>Rainbow Loop</item>
+        <item>Random Burst</item>
+        <item>Color Bounce</item>
+        <item>Color Bounce Fade</item>
+        <item>EMS Light One</item>
+        <item>EMS Light ALL</item>
+        <item>Flicker</item>
+        <item>Pulse One Color</item>
+        <item>Pulse with change color</item>
+        <item>Fade Vertical</item>
+        <item>Rule 30</item>
+        <item>Random March</item>
+        <item>RWB March</item>
+        <item>Radiation</item>
+        <item>Color Loop Verdelay</item>
+        <item>White Temps</item>
+        <item>Sin Bright Wave</item>
+        <item>Pop Horizontal</item>
+        <item>Quad Bright Cirve</item>
+        <item>lame</item>
+        <item>Rainbow Vertical</item>
+        <item>Pacman</item>
+        <item>Random Color Pop</item>
+        <item>EMS Lights Strobe</item>
+        <item>RGB Propeller</item>
+        <item>Kitt</item>
+        <item>Matrix</item>
+        <item>NEW! Rainbow Loop</item>
+        <item>Color Wipe</item>
+        <item>Cylon Bounce</item>
+        <item>Fire</item>
+        <item>Rainbow Cycle</item>
+        <item>Twinkle Random</item>
+        <item>Running Lights</item>
+        <item>Sparkle</item>
+        <item>Snow Sparkle</item>
+        <item>Theater Chase</item>
+        <item>Theater Chase Rainbow</item>
+        <item>Strobe</item>
+        <item>Bouncing Ball</item>
+        <item>Bouncing Colored Ball</item>
+        <item>Red</item>
+        <item>Green</item>
+        <item>Blue</item>
+        <item>Yellow</item>
+        <item>Cyan</item>
+        <item>Purple</item>
+        <item>White</item>
+    </string-array>
 
 </resources>
