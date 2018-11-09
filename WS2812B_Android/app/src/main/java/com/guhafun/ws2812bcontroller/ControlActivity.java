@@ -55,8 +55,6 @@ public class ControlActivity extends AppCompatActivity {
     //Константы-запросы к МК
     private final Byte GET_INITIAL_DATA = 1;
 
-    //Флаг используемый в фоновом потоке приема данных
-    static boolean isNeedToStopInputThread = false;
     //Флаг используемы для приема начальных значений от МК
     static boolean isInitialDataRecieved = false;
 
@@ -80,8 +78,6 @@ public class ControlActivity extends AppCompatActivity {
     ImageButton btnNext;
     ImageButton btnPause;
 
-//    ProgressDialog mProgressDialog = null;
-
     //Сокет и потоки, необходимые для обмена данными
     private static BluetoothSocket mmSocket = null;
     private OutputStream mOutputStream;
@@ -90,9 +86,9 @@ public class ControlActivity extends AppCompatActivity {
     //Хэндлер для обмена сообщениями с потоком подключения (ConnectThread)
     HandlerControl mHandler = null;
 
+    //Входящий поток приема данных
     InputThread mInputThread;
 
-    //private InputThread inThread = null;
     //TAG для логов
     private String TAG = "ConLog";
 
@@ -266,7 +262,7 @@ public class ControlActivity extends AppCompatActivity {
     }
 
     //Handler для связи с потоком ConnectThread
-    class HandlerControl extends Handler{
+    class HandlerControl extends Handler {
         //Счетчик переподключений в случае потери связи
         int reconnectCount = 1;
         @Override
@@ -303,8 +299,14 @@ public class ControlActivity extends AppCompatActivity {
         }
     }
 
+    class UpdaterUI extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+        }
+    }
 
-
+    //Поток инициализации графическо интерфейса первичными данными
     class ThreadInitialize extends Thread{
         int count = 0;
         @Override
@@ -341,6 +343,7 @@ public class ControlActivity extends AppCompatActivity {
         }
     }
 
+    //Слушатель изменения состояния подключения к МК
     BroadcastReceiver connectionStatusChanged = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {

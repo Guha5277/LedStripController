@@ -8,4 +8,6 @@
     <string name="btnNext">Кнопка вперед</string>
     <string name="btnPrev">Кнопка назад</string>
     <string name="btnPause">Кнопка пауза</string>
+    <string name="bright">Яркость</string>
+    <string name="speed">Скорость</string>
 </resources>

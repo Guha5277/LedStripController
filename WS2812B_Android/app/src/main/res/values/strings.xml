@@ -13,4 +13,6 @@
     <string name="btnNext">Button Next</string>
     <string name="btnPrev">Button prevision</string>
     <string name="btnPause">Button Pause</string>
+    <string name="bright">Bright</string>
+    <string name="speed">Speed</string>
 </resources>
