@@ -348,7 +348,7 @@ void nextMode() {
 void favMode() {
     EEPROM.begin(64);
   
-  startMode = command[1]; //в data1 - номер режима
+  startMode = command[1]; //в command[1] - номер режима
   EEPROM.write(1, startMode);
 
     EEPROM.commit();

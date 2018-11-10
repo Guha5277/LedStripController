@@ -38,7 +38,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
-public class ControlActivity extends AppCompatActivity {
+public class ControlActivity extends AppCompatActivity implements View.OnClickListener {
 
     //Строковый массив данных, содержащий названия режимов ленты.
 //    private String[] modeNames = {"Rainbow Fade", "Rainbow Loop", "Random Burst", "Color Bounce", "Color Bounce Fade", "EMS Light One",
@@ -92,6 +92,7 @@ public class ControlActivity extends AppCompatActivity {
 
     //Входящий поток приема данных
     InputThread mInputThread;
+    Commander mCommander;
 
     //TAG для логов
     private String TAG = "ConLog";
@@ -111,23 +112,14 @@ public class ControlActivity extends AppCompatActivity {
         btnPause = findViewById(R.id.btnPause);
         btnNext = findViewById(R.id.btnNext);
 
-        //Временный слушатель
-        btnNext.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try{
-                    Log.d(TAG, "ControlActivity: Попытка отправки данных: 1 ...");
-                    mOutputStream.write(1);
-                }catch (IOException ie){
-                    Log.e(TAG, "ControlActivity: Ошибка отправки данных!", ie);
-                }
-                Log.d(TAG, "ControlActivity: Данные отправлены");
-            }
-
-        });
+        btnPrev.setOnClickListener(this);
+        btnNext.setOnClickListener(this);
+        btnPause.setOnClickListener(this);
 
         //Получаем потоки
         getStreams();
+
+        mCommander = new Commander(mOutputStream);
 
         //Получаем список режимов из XML-файла
         modeList = this.getResources().getStringArray(
@@ -323,9 +315,12 @@ public class ControlActivity extends AppCompatActivity {
 
                 case 1:
                     getStreams();
+
                     InputThread inputThread = new InputThread(mInputStream);
                     inputThread.setEnabled(true);
                     inputThread.start();
+
+                    mCommander = new Commander(mOutputStream);
 
                     ThreadInitialize initializeThread = new ThreadInitialize();
                     initializeThread.start();
@@ -422,6 +417,24 @@ public class ControlActivity extends AppCompatActivity {
         stopInputThread();
         closeSocket();
     }
+
+//Обработчик нажатий на элементы меню
+        @Override
+        public void onClick(View v) {
+            switch (v.getId()){
+                case R.id.btnPrev:
+                    mCommander.prevMode();
+                    break;
+
+                case R.id.btnPause:
+                    mCommander.pausePlay();
+                    break;
+
+                case R.id.btnNext:
+                    mCommander.nextMode();
+                    break;
+            }
+        }
 
     void stopInputThread(){
         if(mInputThread != null) mInputThread.setEnabled(false);

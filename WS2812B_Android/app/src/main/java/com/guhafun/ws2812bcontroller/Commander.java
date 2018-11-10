@@ -39,7 +39,7 @@ public class Commander {
         Log.d(TAG, "Output: Данные отправлены");
     }
 
-    public void mOnOff(){
+    public void onOff(){
         sendMessage(ON_OFF);
     }
 
@@ -55,19 +55,36 @@ public class Commander {
         sendMessage(PAUSE_PLAY);
     }
 
-    public void addToFav(){
-        sendMessage(FAV_MODE);
+    public void addToFav(byte modeIndex){
+        sendMessage(FAV_MODE, modeIndex);
     }
 
-    public void mActDeactMode(byte mode, byte state){
+    public void actDeactMode(byte mode, byte state){
         sendMessage(ACT_DEACT_MODE, mode, state);
     }
 
-    public void setAuto(boolean state){
-        byte msg;
-        if (state) msg = 1;
-        else msg = 0;
-        sendMessage(AUTO_MODE, msg);
+    public void setAutoMode(boolean state){
+        byte onOffValue;
+
+        onOffValue = (state) ? (byte) 1 : 0;
+
+        sendMessage(AUTO_MODE, onOffValue);
+    }
+
+    public void setColor(byte r, byte g,  byte b){
+        sendMessage(SET_COLOR, r, g, b);
+    }
+
+    public void setBright (byte bright) {
+        sendMessage(SET_BRIGHT, bright);
+    }
+
+    public void setSpeed (byte speed) {
+        sendMessage(SET_SPEED, speed);
+    }
+
+    public void saveSettings() {
+        sendMessage(SAVE_SETTINGS);
     }
 
 

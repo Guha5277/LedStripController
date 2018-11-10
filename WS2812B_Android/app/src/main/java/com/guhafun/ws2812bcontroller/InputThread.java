@@ -25,44 +25,50 @@ public class InputThread extends Thread{
         Log.d(TAG, "InputThread поток запущен");
         int count;
 
-        while(isNeedToListenData){
-            try{
-                count = inputStream.available();
-                if(count > 0 && count < 54){
+        while(isNeedToListenData) {
+            try {
+                if (inputStream.available() > 0) {
                     try {
-                        Thread.sleep(10);
-                    }catch (InterruptedException ie){
-                        Log.e(TAG, "ControlActivity: Ошибка приостановки потока!", ie);
+                        Thread.sleep(50);
+                    } catch (InterruptedException ie) {
+                        Log.e(TAG, "InputThread: Ошибка приостановки потока!", ie);
                     }
-                    Log.d(TAG, "ControlActivity: Доступно байт: " + count);
+
                     count = inputStream.available();
-                    data = new byte[count];
-                    count = inputStream.read(data);
-                    ControlActivity.data = data;
 
-                    Log.d(TAG, "ControlActivity: Принято байт: " + count + ", Содердимое: " + Arrays.toString(data));
+                    Log.d(TAG, "InputThread: count: " + count);
 
-                }
+                    if (count > 0 && count <= 4) {
 
-                if(count == 54 ){
-                    try {
-                        Thread.sleep(10);
-                    }catch (InterruptedException ie){
-                        Log.e(TAG, "ControlActivity: Ошибка приостановки потока!", ie);
+                        Log.d(TAG, "InputThread: Доступно байт: " + count);
+                        count = inputStream.available();
+                        data = new byte[count];
+                        count = inputStream.read(data);
+
+                        Log.d(TAG, "InputThread: Принято байт: " + count + ", Содердимое: " + Arrays.toString(data));
+
                     }
-                    Log.d(TAG, "ControlActivity: Доступно байт: " + count);
-                    //count = inputStream.available();
-                    data = new byte[count];
-                    count = inputStream.read(data);
-                    //ControlActivity.data = data;
-                    initializeData = data;
-                    ControlActivity.isInitialDataRecieved = true;
 
-                    Log.d(TAG, "ControlActivity: Принято байт: " + count + ", Содердимое: " + Arrays.toString(data));
+                    if (count == 54) {
+                        Log.d(TAG, "InputThread: Доступно байт: " + count);
+                        data = new byte[count];
+                        count = inputStream.read(data);
+                        initializeData = data;
+                        ControlActivity.isInitialDataRecieved = true;
+
+                        Log.d(TAG, "InputThread: Принято байт: " + count + ", Содердимое: " + Arrays.toString(data));
+                    }
+
+                    else {
+                        byte[] temp;
+                        temp = new byte[count];
+                        inputStream.read(temp);
+                    }
                 }
-            }catch (IOException ie){
+
+                }catch(IOException ie){
                 setEnabled(false);
-                Log.e(TAG, "ControlActivity: Ошибка при получении данных!", ie);
+                Log.e(TAG, "InputThread: Ошибка при получении данных!", ie);
             }
         }
         Log.d(TAG, "InputThread поток завершен");

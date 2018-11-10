@@ -54,7 +54,7 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
 
         holder.mCheckedTextView.setText(names[position]);
 
-        if (activeModes[position + 4] == 1) {
+        if (activeModes[position + 5] == 1) {
             ((ListView) parent).setItemChecked(position, true);
         }
         else {
