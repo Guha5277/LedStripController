@@ -38,7 +38,7 @@
 
 
 ### Клиентская часть Android (В стадии разработки)
-![alt text](https://github.com/Guha5277/LedStripController/blob/master/android.png)
+
 Протестировано на Android 6.0 и Android 8.0
 * API Level 21.
 * Реализован вывод списка сопряженных и поиск доступных Bluetooth-устройств.
