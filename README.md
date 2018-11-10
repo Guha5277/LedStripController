@@ -26,9 +26,11 @@
 * Возможность установки произвольного цвета (RGB).
 
 ### Клиентская часть Windows (Pre Alpha Version)
-Протестировано на OS Windows 7 и Windows 10.
+
 ![alt text](https://github.com/Guha5277/LedStripController/blob/master/win7.png)
-      
+
+Протестировано на OS Windows 7 и Windows 10.      
+
 * Написанный с нуля клиент.
 * Довольно архаичный (по современным меркам) графический интерфейс (в виду использования устаревшего графического ядра для Java - Swing).
 * Алгоритм обмена сообщениями с сервером.
@@ -36,6 +38,8 @@
 
 
 ### Клиентская часть Android (В стадии разработки)
+![alt text](https://github.com/Guha5277/LedStripController/blob/master/android.png)
+
 Протестировано на Android 6.0 и Android 8.0
 * API Level 21.
 * Реализован вывод списка сопряженных и поиск доступных Bluetooth-устройств.
