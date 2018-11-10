@@ -1,7 +1,6 @@
 package com.guhafun.ws2812bcontroller;
 
 import android.util.Log;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -11,6 +10,7 @@ public class InputThread extends Thread{
     private String TAG = "ConLog";
     private InputStream inputStream;
     private byte[] data;
+    private byte[] initializeData;
 
     //Флаг с актуальным состоянием потока
     private boolean isNeedToListenData = false;
@@ -27,32 +27,35 @@ public class InputThread extends Thread{
 
         while(isNeedToListenData){
             try{
-                if(inputStream.available() > 0 && inputStream.available() < 10){
+                count = inputStream.available();
+                if(count > 0 && count < 54){
                     try {
                         Thread.sleep(10);
                     }catch (InterruptedException ie){
                         Log.e(TAG, "ControlActivity: Ошибка приостановки потока!", ie);
                     }
-
+                    Log.d(TAG, "ControlActivity: Доступно байт: " + count);
                     count = inputStream.available();
                     data = new byte[count];
                     count = inputStream.read(data);
                     ControlActivity.data = data;
 
                     Log.d(TAG, "ControlActivity: Принято байт: " + count + ", Содердимое: " + Arrays.toString(data));
+
                 }
 
-                if(inputStream.available() == 54 ){
+                if(count == 54 ){
                     try {
                         Thread.sleep(10);
                     }catch (InterruptedException ie){
                         Log.e(TAG, "ControlActivity: Ошибка приостановки потока!", ie);
                     }
-
-                    count = inputStream.available();
+                    Log.d(TAG, "ControlActivity: Доступно байт: " + count);
+                    //count = inputStream.available();
                     data = new byte[count];
                     count = inputStream.read(data);
-                    ControlActivity.data = data;
+                    //ControlActivity.data = data;
+                    initializeData = data;
                     ControlActivity.isInitialDataRecieved = true;
 
                     Log.d(TAG, "ControlActivity: Принято байт: " + count + ", Содердимое: " + Arrays.toString(data));
@@ -73,19 +76,19 @@ public class InputThread extends Thread{
         return isNeedToListenData;
     }
 
-    public byte[] getData(){
-        if(data != null){
+    public byte[] getInitializeData(){
+        if(initializeData != null){
             Log.d(TAG, "InputThread данные переданы в главный поток");
-            return data;
+            return initializeData;
         }
         else {
-            Log.d(TAG, "InputThread данные переданы в главный поток");
+            Log.d(TAG, "InputThread ошибка передачи данных другому потоку!");
             return null;
         }
     }
 
     public void clearData(){
-        Log.d(TAG, "Данные были очищены");
+        Log.d(TAG, "InputThread Данные были очищены");
         data = null;
     }
 }

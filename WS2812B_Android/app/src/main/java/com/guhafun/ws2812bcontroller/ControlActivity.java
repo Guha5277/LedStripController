@@ -30,6 +30,7 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 import com.example.ws2812bcontroller.R;
 import java.io.IOException;
@@ -71,6 +72,9 @@ public class ControlActivity extends AppCompatActivity {
     ImageButton menuBtnFav;
     ImageButton menuBtnSave;
 
+    TextView txtCurMode;
+    TextView txtCurModeNum;
+
     //Графические элементы - два ползунка с регулировкой скорости и яркости, кнопки переключения режимов, паузы
     SeekBar seekSpeed;
     SeekBar seekBright;
@@ -98,6 +102,8 @@ public class ControlActivity extends AppCompatActivity {
         setContentView(R.layout.activity_contlor);
 
         //Инициализация объектов графического интерфейса
+        txtCurMode = findViewById(R.id.txtCurMode);
+        txtCurModeNum = findViewById(R.id.txtCurNumber);
         choiceModeList = findViewById(R.id.modeListView);
         seekSpeed = findViewById(R.id.seekSpeed);
         seekBright = findViewById(R.id.seekBright);
@@ -127,13 +133,6 @@ public class ControlActivity extends AppCompatActivity {
         modeList = this.getResources().getStringArray(
                 R.array.mode_list);
 
-        //Инициализируем адаптер
-        adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_multiple_choice, modeList);
-       // adapter = ArrayAdapter.createFromResource(this, R.array.mode_list, android.R.layout.simple_list_item_multiple_choice);//new MyArrayAdapter(this, modeList);
-        //Настраиваем список и добавляем адаптер
-        choiceModeList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-        choiceModeList.setAdapter(adapter);
-
         //Инициализируем Handler
         mHandler = new HandlerControl();
 
@@ -154,18 +153,40 @@ public class ControlActivity extends AppCompatActivity {
     }
 
     //Обновление интерфейса в соотвествтии с актуальными данными
-    private void updateUI(boolean result){
-        //isInitialDataRecieved = !result;
+    private void updateUI(final boolean result){
+        //Получаем принятые во входящим потоке данные
+        final byte[] data = mInputThread.getInitializeData();
 
-        btnPrev.setEnabled(result);
-        btnPause.setEnabled(result);
-        btnNext.setEnabled(result);
-        seekBright.setEnabled(result);
-        seekSpeed.setEnabled(result);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                //Инициализируем адаптер - в конструкторе, помимо контекста, указываем также список режимов и принятую информацию об активированных режимах
+                adapter = new CustomArrayAdapter(ControlActivity.this, modeList, data);
+                choiceModeList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+                choiceModeList.setAdapter(adapter);
+                adapter.notifyDataSetChanged();
 
-        choiceModeList.setEnabled(result);
+                btnPrev.setEnabled(result);
+                btnPause.setEnabled(result);
+                btnNext.setEnabled(result);
+                seekBright.setEnabled(result);
+                seekSpeed.setEnabled(result);
+
+                choiceModeList.setEnabled(result);
+
+                txtCurMode.setText(modeList[data[0]-1]);
+                txtCurModeNum.setText(data[0] + "/49");
+
+            }
+        });
+
+
+
+
+
+
       
-        Log.d(TAG, "First: " + choiceModeList.getFirstVisiblePosition() + ", Last: " + choiceModeList.getLastVisiblePosition());
+       // Log.d(TAG, "First: " + choiceModeList.getFirstVisiblePosition() + ", Last: " + choiceModeList.getLastVisiblePosition());
 
 //        for(int i = 0; i <= choiceModeList.getLastVisiblePosition() - choiceModeList.getFirstVisiblePosition(); i++) {
 //            CheckedTextView chkd = choiceModeList.getChildAt(i).findViewById(android.R.id.text1);
@@ -183,6 +204,16 @@ public class ControlActivity extends AppCompatActivity {
 
         //Метод который сообщает меню о том, что необходимо вызвать метод onPrepareOptionsMenu() для обновления элементов меню
         invalidateOptionsMenu();
+    }
+
+    void disableUI() {
+        isInitialDataRecieved = false;
+        choiceModeList.setEnabled(false);
+        seekBright.setEnabled(false);
+        seekSpeed.setEnabled(false);
+        btnPrev.setEnabled(false);
+        btnPause.setEnabled(false);
+        btnNext.setEnabled(false);
     }
 
     //Статичный метод, вызываем в случае успешной установки/восстановления соединения (класс ConnectThread)
@@ -231,15 +262,17 @@ public class ControlActivity extends AppCompatActivity {
     public boolean onPrepareOptionsMenu(Menu menu) {
         controlMenu = menu;
         if (isInitialDataRecieved){
-            menuBtnOnOff.setEnabled(false);
-            menuBtnSave.setEnabled(false);
-            menuBtnSave.setEnabled(false);
-        }
-        else{
             menuBtnOnOff.setEnabled(true);
             menuBtnSave.setEnabled(true);
             menuBtnSave.setEnabled(true);
         }
+        else{
+            menuBtnOnOff.setEnabled(false);
+            menuBtnSave.setEnabled(false);
+            menuBtnSave.setEnabled(false);
+        }
+
+       // menuBtnOnOff.setChecked(true);
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -293,6 +326,9 @@ public class ControlActivity extends AppCompatActivity {
                     InputThread inputThread = new InputThread(mInputStream);
                     inputThread.setEnabled(true);
                     inputThread.start();
+
+                    ThreadInitialize initializeThread = new ThreadInitialize();
+                    initializeThread.start();
 
                     break;
             }
@@ -358,6 +394,7 @@ public class ControlActivity extends AppCompatActivity {
                     case BluetoothDevice.ACTION_ACL_DISCONNECTED:
                         //Останавливаем поток входящих данных
                         stopInputThread();
+                        disableUI();
                         Log.d(TAG, "ControlActivity: Соединение потеряно, попытка переподключения");
                         Toast.makeText(ControlActivity.this, "Соединение потеряно!!", Toast.LENGTH_SHORT).show();
                         closeSocket();
