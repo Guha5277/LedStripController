@@ -150,40 +150,39 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     }
 
     //Обновление интерфейса в соотвествтии с актуальными данными
-    private void updateUI(final boolean result){
-        //Получаем принятые во входящим потоке данные
-        final byte[] data = mInputThread.getInitializeData();
+    private void updateUI(byte[] data){
 
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
                 //Инициализируем адаптер - в конструкторе, помимо контекста, указываем также список режимов и принятую информацию об активированных режимах
                 adapter = new CustomArrayAdapter(ControlActivity.this, modeList, data);
                 choiceModeList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
                 choiceModeList.setAdapter(adapter);
                 adapter.notifyDataSetChanged();
 
-                btnPrev.setEnabled(result);
-                btnPause.setEnabled(result);
-                btnNext.setEnabled(result);
-                seekBright.setEnabled(result);
-                seekSpeed.setEnabled(result);
+                btnPrev.setEnabled(true);
+                btnPause.setEnabled(true);
+                btnNext.setEnabled(true);
+                seekBright.setEnabled(true);
+                seekSpeed.setEnabled(true);
 
-                choiceModeList.setEnabled(result);
+                choiceModeList.setEnabled(true);
 
-                txtCurMode.setText(modeList[data[0]-1]);
-                txtCurModeNum.setText(data[0] + "/49");
+                txtCurMode.setText(modeList[data[1]-1]);
+                txtCurModeNum.setText(data[1] + "/49");
 
                 seekBright.setProgress(data[2]);
 
+                //Выключаем ползунок скорости, если у текущего режима отсутствует возможность ее регулировки
                 if (data[4] == 0){
                     seekSpeed.setEnabled(false);
+                    seekSpeed.setProgress(0);
+                }
+                else {
+                    seekSpeed.setMax(data[4] * 2);
+                    seekSpeed.setProgress(data[4]);
                 }
 
-            }
-        });
-
-        invalidateOptionsMenu();
+                //Оповещаем меню
+                invalidateOptionsMenu();
     }
 
     void disableUI() {
@@ -330,7 +329,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 try {
                     Thread.sleep(200);
                     if(isInitialDataRecieved){
-                        updateUI(isInitialDataRecieved);
+                        //updateUI(isInitialDataRecieved);
                         Log.d(TAG, "Поток InitializeData завершен со счетчиком: " + count);
                         return;
                     }
@@ -391,9 +390,10 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
             switch (returnedCommand){
 
                 case (byte) 1:
-                    if (intent.getByteArrayExtra("data").length == 54) {
+                    if (data.length == 54) {
                         isInitialDataRecieved = true;
                         isStripEnable = true;
+                        updateUI(data);
                     }
 
                     Log.d(TAG, "ControlActivity приняты данные для инициализации в размере: " + data.length);
@@ -425,6 +425,9 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     @Override
     protected void onDestroy(){
         super.onDestroy();
+        //Останавливаем поток входящих данных и закрываем сокет
+        stopInputThread();
+
         //Снятие слушателей при уничтожении Активити
         unregisterReceiver(connectionStatusChanged);
         LocalBroadcastManager.getInstance(ControlActivity.this).unregisterReceiver(inputThreadListener);
@@ -435,9 +438,8 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     @Override
     protected void onStop() {
         super.onStop();
-        //Останавливаем поток входящих данных и закрываем сокет
-        stopInputThread();
-        closeSocket();
+       // closeSocket();
+
     }
 
 //Обработчик нажатий на элементы меню

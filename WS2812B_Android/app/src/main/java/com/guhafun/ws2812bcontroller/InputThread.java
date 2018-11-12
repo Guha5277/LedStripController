@@ -81,7 +81,7 @@ public class InputThread extends Thread{
                         //
                         data = new byte[count];
                         count = inputStream.read(data);
-                        updateInitData(data);
+                        //updateInitData(data);
                         messageProcessing(data);
 
                         //ControlActivity.isInitialDataRecieved = true;
@@ -168,21 +168,5 @@ public class InputThread extends Thread{
 
     private void updateInitData(byte[] data){
         initializeData = Arrays.copyOf(data, 54);
-    }
-
-    public byte[] getInitializeData(){
-        if(initializeData != null){
-            Log.d(TAG, "InputThread данные переданы в главный поток");
-            return initializeData;
-        }
-        else {
-            Log.d(TAG, "InputThread ошибка передачи данных другому потоку!");
-            return null;
-        }
-    }
-
-    public void clearData(){
-        Log.d(TAG, "InputThread Данные были очищены");
-        data = null;
     }
 }

@@ -15,6 +15,8 @@ import android.widget.ListView;
 
 import com.example.ws2812bcontroller.R;
 
+import java.util.Arrays;
+
 
 //Кастомный ArrayAdapter для работы со списком режимов
 class CustomArrayAdapter extends ArrayAdapter<String> {
@@ -23,6 +25,7 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
     private byte[] activeModes = null;
     private String[] names;
     private int colorActive;
+    private byte currentMode;
 
     LayoutInflater mInflater;
 
@@ -30,7 +33,8 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
         super(context, android.R.layout.simple_list_item_multiple_choice, names);
         this.context = context;
         this.names = names;
-        this.activeModes = activeModes;
+        currentMode = activeModes[1];
+        this.activeModes = Arrays.copyOfRange(activeModes, 5, activeModes.length);
         mInflater = context.getLayoutInflater();
 
       colorActive = context.getResources().getColor(R.color.colorActiveMode);
@@ -61,7 +65,7 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
 
         holder.mCheckedTextView.setText(names[position]);
 
-        if (activeModes[0] - 1 == position){
+        if (currentMode - 1 == position){
             holder.mCheckedTextView.setBackgroundColor(colorActive);
             holder.mCheckedTextView.setTextColor(Color.WHITE);
 
@@ -71,7 +75,8 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
             holder.mCheckedTextView.setTextColor(Color.BLACK);
         }
 
-        if (activeModes[position + 5] == 1) {
+//        if (activeModes[position + 5] == 1) {
+        if (activeModes[position] == 1) {
             ((ListView) parent).setItemChecked(position, true);
         }
         else {
@@ -82,7 +87,7 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
 
     public void updateCurrentMode(byte mode){
 
-        activeModes[0] = mode;
+        currentMode = mode;
         notifyDataSetChanged();
     }
 }
