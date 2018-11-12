@@ -316,13 +316,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
-    class UpdaterUI extends Handler {
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-        }
-    }
-
     //Поток инициализации графическо интерфейса первичными данными
     class ThreadInitialize extends Thread {
         int count = 0;
@@ -332,7 +325,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
             while (count < 10) {
                 sendMessage(GET_INITIAL_DATA);
                 try {
-                    Thread.sleep(50);
+                    Thread.sleep(200);
                     if(isInitialDataRecieved){
                         updateUI(isInitialDataRecieved);
                         Log.d(TAG, "Поток InitializeData завершен со счетчиком: " + count);
@@ -386,11 +379,29 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         }
     };
 
+    //Слушатель для обновления UI принятыми данными
     BroadcastReceiver inputThreadListener = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            byte returnedCommand = intent.getByteExtra("result", (byte) 0);
-            Log.d(TAG, "ControlActivity возвращенные данные: " + returnedCommand);
+            byte returnedCommand = intent.getByteExtra("msg", (byte) 0);
+            byte[] data = intent.getByteArrayExtra("data");
+            switch (returnedCommand){
+
+                case (byte) 1:
+                    if (intent.getByteArrayExtra("data").length == 54) {
+                        isInitialDataRecieved = true;
+                    }
+
+                    Log.d(TAG, "ControlActivity приняты данные для инициализации в размере: " + data.length);
+                    break;
+
+                case 3:
+                case 4:
+                    //adapter.updateCurrentMode(data[0]);
+                    break;
+            }
+
+            Log.d(TAG, "ControlActivity приняты данные но ничего не изменено: " + returnedCommand);
         }
     };
 

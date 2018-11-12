@@ -79,4 +79,8 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
         }
         return convertView;
     }
+
+    public void updateCurrentMode(byte mode){
+        activeModes[0] = mode;
+    }
 }

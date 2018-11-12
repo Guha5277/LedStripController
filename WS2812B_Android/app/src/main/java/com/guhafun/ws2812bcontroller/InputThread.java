@@ -16,6 +16,7 @@ public class InputThread extends Thread{
     private byte[] data;
     private byte[] initializeData = new byte[54];
 
+    private final int INITIALIZE = 1;
     private final int ON_OFF = 2;
     private final byte PREV_MODE = 3;
     private final byte NEXT_MODE = 4;
@@ -64,13 +65,10 @@ public class InputThread extends Thread{
                     if (count > 0 && count < 54) {
 
                         Log.d(TAG, "InputThread: Доступно байт: " + count);
-                        //Получаем количество принятых байт
+                        //Присваиваем счетчику количество доступных байт, создаем эквивалентный счетчику массив, считываем данные и отправляем изменения в главный поток
                         count = inputStream.available();
-                        //Создаем новый массив байт эквивалентного размера
                         data = new byte[count];
-                        //Считываем байты в массив и присваиваем их количество нашему счётчику
                         count = inputStream.read(data);
-                        //Обрабатываем полученные данные
                         messageProcessing(data);
 
                         Log.d(TAG, "InputThread: Принято байт (<54): " + count + ", Содердимое: " + Arrays.toString(data));
@@ -80,11 +78,13 @@ public class InputThread extends Thread{
 
                     if (count == 54) {
                         Log.d(TAG, "InputThread: Доступно байт: " + count);
+                        //
                         data = new byte[count];
                         count = inputStream.read(data);
                         updateInitData(data);
+                        messageProcessing(data);
 
-                        ControlActivity.isInitialDataRecieved = true;
+                        //ControlActivity.isInitialDataRecieved = true;
 
                         Log.d(TAG, "InputThread: Принято байт (=54): " + count + ", Содердимое: " + Arrays.toString(data));
                     }
@@ -113,34 +113,55 @@ public class InputThread extends Thread{
 //        return isNeedToListenData;
 //    }
 
+    //Метод для отпраки данных в главный поток
     private void messageProcessing(byte [] inputData){
+        //Здесь проверяется соответствие длины массива(кол-ва байт) которые может отправить МК при разных коммандах , в случае расхождений метод прерывается
         switch(inputData[0]){
+            case INITIALIZE:
+                if (inputData.length != 54) {
+                    return;
+                }
+                break;
+
             case ON_OFF:
-                break;
             case PREV_MODE:
-                break;
             case NEXT_MODE:
-                break;
             case PAUSE_PLAY:
-                break;
             case FAV_MODE:
-                break;
-            case ACT_DEACT_MODE:
-                break;
             case AUTO_MODE:
-                break;
-            case SET_COLOR:
-                break;
             case SET_BRIGHT:
-                break;
             case SET_SPEED:
-                break;
             case SAVE_SETTINGS:
+                if (inputData.length != 2) {
+                    return;
+                }
                 break;
+
+            case ACT_DEACT_MODE:
+                if (inputData.length != 3) {
+                    return;
+                }
+                break;
+
+            case SET_COLOR:
+                if (inputData.length != 4) {
+                    return;
+                }
+                break;
+
+
+                //Если пришедшая команда неивестна(пришёл хлам) - прерываем метод
+            default:
+                return;
         }
 
+        //Когда все проверки были пройдены, отправляем данные в ControlActivity
         Intent intent = new Intent(ControlActivity.DATA_MESSAGE);
-        intent.putExtra("result", inputData[0]);
+        intent.putExtra("msg", inputData[0]);
+        intent.putExtra("data", inputData);
+
+        Log.d(TAG, "InputThread отправлена команда: " + inputData[0] + ", с содержимым: " + Arrays.toString(inputData));
+
         LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
 
     }
