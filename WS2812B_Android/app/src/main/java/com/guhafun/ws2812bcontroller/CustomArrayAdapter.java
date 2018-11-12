@@ -81,6 +81,8 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
     }
 
     public void updateCurrentMode(byte mode){
+
         activeModes[0] = mode;
+        notifyDataSetChanged();
     }
 }

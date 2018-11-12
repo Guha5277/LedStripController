@@ -124,8 +124,6 @@ public class InputThread extends Thread{
                 break;
 
             case ON_OFF:
-            case PREV_MODE:
-            case NEXT_MODE:
             case PAUSE_PLAY:
             case FAV_MODE:
             case AUTO_MODE:
@@ -137,6 +135,8 @@ public class InputThread extends Thread{
                 }
                 break;
 
+            case PREV_MODE:
+            case NEXT_MODE:
             case ACT_DEACT_MODE:
                 if (inputData.length != 3) {
                     return;

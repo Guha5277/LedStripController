@@ -57,6 +57,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     //Константы-запросы к МК
     private final Byte GET_INITIAL_DATA = 1;
     public static String DATA_MESSAGE = "com.guhafun.message";
+    private boolean isStripEnable = false;
 
     //Флаг используемы для приема начальных значений от МК
     static boolean isInitialDataRecieved = false;
@@ -66,7 +67,8 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
     //Список с названиями и актуальным состоянием режимов, адаптер для списка
     ListView choiceModeList;
-    ArrayAdapter<String> adapter;
+    CustomArrayAdapter adapter;
+    //ArrayAdapter<String> adapter;
 
     //Элементы меню
     Menu controlMenu;
@@ -239,8 +241,9 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         controlMenu = menu;
-        if (isInitialDataRecieved){
+        if (isStripEnable){
             menuBtnOnOff.setEnabled(true);
+            menuBtnOnOff.setChecked(true);
             menuBtnSave.setEnabled(true);
             menuBtnSave.setEnabled(true);
         }
@@ -390,14 +393,28 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 case (byte) 1:
                     if (intent.getByteArrayExtra("data").length == 54) {
                         isInitialDataRecieved = true;
+                        isStripEnable = true;
                     }
 
                     Log.d(TAG, "ControlActivity приняты данные для инициализации в размере: " + data.length);
                     break;
 
+                    //Переключение режимов
                 case 3:
                 case 4:
-                    //adapter.updateCurrentMode(data[0]);
+                    Log.d(TAG, "ControlActivity принята команда: " + returnedCommand);
+                    adapter.updateCurrentMode(data[1]);
+                    txtCurMode.setText(modeList[data[1]-1]);
+                    txtCurModeNum.setText(data[1] + "/49");
+                    if(data[2] > 0){
+                        seekSpeed.setEnabled(true);
+                        seekSpeed.setMax(data[2] * 2);
+                        seekSpeed.setProgress(data[2]);
+                    }
+                    else {
+                        seekSpeed.setEnabled(false);
+                        seekSpeed.setProgress(0);
+                    }
                     break;
             }
 
