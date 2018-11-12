@@ -65,6 +65,8 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     Switch menuBtnOnOff;
     ImageButton menuBtnFav;
     ImageButton menuBtnSave;
+    Switch menuAutoOnOff;
+
 
     TextView txtCurMode;
     TextView txtCurModeNum;
@@ -225,15 +227,16 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     //Основное меню приложения - включени/выключение ленты
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-
         getMenuInflater().inflate(R.menu.menu_control, menu);
 
         menuBtnOnOff = menu.findItem(R.id.swtOnOff).getActionView().findViewById(R.id.switchButton);
         menuBtnFav = menu.findItem(R.id.button_fav).getActionView().findViewById(R.id.favButton);
         menuBtnSave = menu.findItem(R.id.button_save).getActionView().findViewById(R.id.saveButton);
+        menuAutoOnOff = menu.findItem(R.id.automode).getActionView().findViewById(R.id.switchButton);
+
 
         menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
-
+        menuAutoOnOff.setOnCheckedChangeListener(mOnCheckedAutoChangeListener());
 //        menuBtnOnOff.setOnClickListener(new View.OnClickListener() {
 //            @Override
 //            public void onClick(View v) {
@@ -254,6 +257,8 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
             }
         });
+
+
 
 
 //        menu.findItem(R.id.swtOnOff).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
@@ -482,6 +487,17 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 case 6:
                     Toast.makeText(ControlActivity.this, "Режим " + modeList[data[1]-1] + " был установлен стартовым" , Toast.LENGTH_SHORT).show();
                     break;
+
+                case 8:
+                    String result;
+                    if (data[1] == 1){
+                        result = "Включено";
+                    }
+                    else {
+                        result = "Выключено";
+                    }
+                    Toast.makeText(ControlActivity.this, "Авторежим был установлен в состояние " + result  , Toast.LENGTH_SHORT).show();
+                    break;
             }
 
 
@@ -533,8 +549,17 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         return new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                mCommander.onOff();
-            }
+                        mCommander.onOff();
+                }
+        };
+    }
+
+    private CompoundButton.OnCheckedChangeListener mOnCheckedAutoChangeListener(){
+        return new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                        mCommander.setAutoMode(isChecked);
+                }
         };
     }
 
