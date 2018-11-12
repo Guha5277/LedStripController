@@ -12,17 +12,17 @@ public class Commander {
 
     private String TAG = "ConLog";
 
-    private final Byte ON_OFF = 2;
-    private final Byte PREV_MODE = 3;
-    private final Byte NEXT_MODE = 4;
-    private final Byte PAUSE_PLAY = 5;
-    private final Byte FAV_MODE = 6;
-    private final Byte ACT_DEACT_MODE = 7;
-    private final Byte AUTO_MODE = 8;
-    private final Byte SET_COLOR = 9;
-    private final Byte SET_BRIGHT = 10;
-    private final Byte SET_SPEED = 11;
-    private final Byte SAVE_SETTINGS = 12;
+    private final byte ON_OFF = 2;
+    private final byte PREV_MODE = 3;
+    private final byte NEXT_MODE = 4;
+    private final byte PAUSE_PLAY = 5;
+    private final byte FAV_MODE = 6;
+    private final byte ACT_DEACT_MODE = 7;
+    private final byte AUTO_MODE = 8;
+    private final byte SET_COLOR = 9;
+    private final byte SET_BRIGHT = 10;
+    private final byte SET_SPEED = 11;
+    private final byte SAVE_SETTINGS = 12;
 
 
     Commander(OutputStream outputStream){

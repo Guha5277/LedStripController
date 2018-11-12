@@ -14,6 +14,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -55,6 +56,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
     //Константы-запросы к МК
     private final Byte GET_INITIAL_DATA = 1;
+    public static String DATA_MESSAGE = "com.guhafun.message";
 
     //Флаг используемы для приема начальных значений от МК
     static boolean isInitialDataRecieved = false;
@@ -131,9 +133,10 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         //Регистрируем двух слушателей изменения состояния подключения
         registerReceiver(connectionStatusChanged, new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED));
         registerReceiver(connectionStatusChanged, new IntentFilter(BluetoothDevice.ACTION_ACL_CONNECTED));
+        LocalBroadcastManager.getInstance(this).registerReceiver(inputThreadListener, new IntentFilter(DATA_MESSAGE));
 
         //Инициализация и запуск фонового потока, отвечающего за прием данных
-        mInputThread = new InputThread(mInputStream);
+        mInputThread = new InputThread(mInputStream, this);
         mInputThread.setEnabled(true);
         mInputThread.start();
 
@@ -169,32 +172,15 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 txtCurMode.setText(modeList[data[0]-1]);
                 txtCurModeNum.setText(data[0] + "/49");
 
+                seekBright.setProgress(data[2]);
+
+                if (data[4] == 0){
+                    seekSpeed.setEnabled(false);
+                }
+
             }
         });
 
-
-
-
-
-
-      
-       // Log.d(TAG, "First: " + choiceModeList.getFirstVisiblePosition() + ", Last: " + choiceModeList.getLastVisiblePosition());
-
-//        for(int i = 0; i <= choiceModeList.getLastVisiblePosition() - choiceModeList.getFirstVisiblePosition(); i++) {
-//            CheckedTextView chkd = choiceModeList.getChildAt(i).findViewById(android.R.id.text1);
-//            chkd.setChecked(data[i]);
-//        }
-
-       // choiceModeList.setItemChecked();
-
-//        MyArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.mode_list, android.R.layout.simple_list_item_multiple_choice);
-//        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.mode_list, android.R.layout.simple_list_item_multiple_choice);
-
-
-       // adapter = new MyArrayAdapter(this, data, modeList);
-
-
-        //Метод который сообщает меню о том, что необходимо вызвать метод onPrepareOptionsMenu() для обновления элементов меню
         invalidateOptionsMenu();
     }
 
@@ -316,7 +302,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 case 1:
                     getStreams();
 
-                    InputThread inputThread = new InputThread(mInputStream);
+                    InputThread inputThread = new InputThread(mInputStream, ControlActivity.this);
                     inputThread.setEnabled(true);
                     inputThread.start();
 
@@ -338,7 +324,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     }
 
     //Поток инициализации графическо интерфейса первичными данными
-    class ThreadInitialize extends Thread{
+    class ThreadInitialize extends Thread {
         int count = 0;
         @Override
         public void run() {
@@ -348,10 +334,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 try {
                     Thread.sleep(50);
                     if(isInitialDataRecieved){
-//                        while((choiceModeList.getLastVisiblePosition() == -1)){
-//                            Thread.sleep(500);
-//                            Log.d(TAG, "getFirtstVisible = -1");
-//                        };
                         updateUI(isInitialDataRecieved);
                         Log.d(TAG, "Поток InitializeData завершен со счетчиком: " + count);
                         return;
@@ -360,6 +342,8 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 } catch (Exception ex) {
                     Log.e(TAG, "Ошибка потока Initialize Thread", ex);
                 }
+
+                disableUI();
             }
             Log.d(TAG, "Ошибка инициализации данных");
         }
@@ -402,11 +386,21 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         }
     };
 
+    BroadcastReceiver inputThreadListener = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            byte returnedCommand = intent.getByteExtra("result", (byte) 0);
+            Log.d(TAG, "ControlActivity возвращенные данные: " + returnedCommand);
+        }
+    };
+
     @Override
     protected void onDestroy(){
         super.onDestroy();
         //Снятие слушателей при уничтожении Активити
         unregisterReceiver(connectionStatusChanged);
+        LocalBroadcastManager.getInstance(ControlActivity.this).unregisterReceiver(inputThreadListener);
+
         Log.d(TAG, "ControlActivity уничтожено");
     }
 
@@ -437,7 +431,15 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         }
 
     void stopInputThread(){
-        if(mInputThread != null) mInputThread.setEnabled(false);
+      //  if(mInputThread != null) mInputThread.setEnabled(false);
+        //Убиваем поток InputThread
+        if (mInputThread.isAlive()) {
+            mInputThread.interrupt();
+        } else {
+            Log.d(TAG, "InputThread УЖЕ был остановлен!");
+        }
+
+        if (!mInputThread.isAlive()) Log.d(TAG, "InputThread был остановлен методом interrupt()");
     }
 }
 
