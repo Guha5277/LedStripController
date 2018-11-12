@@ -33,10 +33,15 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
         super(context, android.R.layout.simple_list_item_multiple_choice, names);
         this.context = context;
         this.names = names;
+
+        //Получаем номер текущего режима
         currentMode = activeModes[1];
+
+        //Копируем из принятых данных только часть массива, содержащую информацию о включенных/выключенных режимах
         this.activeModes = Arrays.copyOfRange(activeModes, 5, activeModes.length);
         mInflater = context.getLayoutInflater();
 
+        //Получаем цвет фона для активированного режима
       colorActive = context.getResources().getColor(R.color.colorActiveMode);
 
     }

@@ -127,7 +127,7 @@ public class InputThread extends Thread{
             case PAUSE_PLAY:
             case FAV_MODE:
             case AUTO_MODE:
-            case SET_BRIGHT:
+            //case SET_BRIGHT:
             case SET_SPEED:
             case SAVE_SETTINGS:
                 if (inputData.length != 2) {

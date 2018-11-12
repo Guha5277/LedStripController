@@ -112,6 +112,8 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         choiceModeList = findViewById(R.id.modeListView);
         seekSpeed = findViewById(R.id.seekSpeed);
         seekBright = findViewById(R.id.seekBright);
+        seekBright.setOnSeekBarChangeListener(seekBarListener);
+        //seekBright.setMin(5);
         btnPrev = findViewById(R.id.btnPrev);
         btnPause = findViewById(R.id.btnPause);
         btnNext = findViewById(R.id.btnNext);
@@ -152,7 +154,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     //Обновление интерфейса в соотвествтии с актуальными данными
     private void updateUI(byte[] data){
 
-                //Инициализируем адаптер - в конструкторе, помимо контекста, указываем также список режимов и принятую информацию об активированных режимах
+                //Инициализируем адаптер - в конструкторе, помимо контекста, указываем также список режимов и принятые данные
                 adapter = new CustomArrayAdapter(ControlActivity.this, modeList, data);
                 choiceModeList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
                 choiceModeList.setAdapter(adapter);
@@ -442,9 +444,9 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
     }
 
-//Обработчик нажатий на элементы меню
-        @Override
-        public void onClick(View v) {
+    //Обработчик нажатий на элементы меню
+    @Override
+    public void onClick(View v) {
             switch (v.getId()){
                 case R.id.btnPrev:
                     mCommander.prevMode();
@@ -459,6 +461,26 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                     break;
             }
         }
+
+    private SeekBar.OnSeekBarChangeListener seekBarListener = new SeekBar.OnSeekBarChangeListener () {
+        @Override
+        public void onStartTrackingTouch(SeekBar seekBar) {
+
+        }
+
+        @Override
+        public void onStopTrackingTouch(SeekBar seekBar) {
+
+        }
+
+        @Override
+        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            switch(seekBar.getId()){
+                case R.id.seekBright:
+                    mCommander.setBright((byte)progress);
+            }
+        }
+    };
 
     void stopInputThread(){
       //  if(mInputThread != null) mInputThread.setEnabled(false);
