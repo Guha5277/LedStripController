@@ -90,9 +90,13 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
         return convertView;
     }
 
-    public void updateCurrentMode(byte mode){
+    public void setCurrentMode(byte mode){
 
         currentMode = mode;
         notifyDataSetChanged();
+    }
+
+    public byte getCurrentMode() {
+        return currentMode;
     }
 }

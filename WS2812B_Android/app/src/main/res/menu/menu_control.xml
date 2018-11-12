@@ -5,18 +5,20 @@
 
     <item
         android:id="@+id/button_save"
+        android:enabled="true"
         android:title="Save"
         app:actionLayout="@layout/save_item"
         app:showAsAction="always" />
     <item
         android:id="@+id/button_fav"
+        android:enabled="true"
         android:title="Favorite"
         app:actionLayout="@layout/fav_item"
         app:showAsAction="always" />
     <item
         android:id="@+id/swtOnOff"
+        android:enabled="true"
         android:title="@string/swtOnOff"
         app:actionLayout="@layout/switch_item"
-        app:showAsAction="always">
-    </item>
+        app:showAsAction="always"></item>
 </menu>

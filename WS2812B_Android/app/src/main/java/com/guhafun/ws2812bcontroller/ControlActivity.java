@@ -1,38 +1,28 @@
 package com.guhafun.ws2812bcontroller;
 
-import android.app.Activity;
-import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Color;
-import android.nfc.Tag;
 import android.os.Handler;
 import android.os.Message;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.CheckedTextView;
+import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.example.ws2812bcontroller.R;
 import java.io.IOException;
 import java.io.InputStream;
@@ -168,8 +158,14 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
                 choiceModeList.setEnabled(true);
 
-                txtCurMode.setText(modeList[data[1]-1]);
-                txtCurModeNum.setText(data[1] + "/49");
+                if(data[1] != 0) {
+                    txtCurMode.setText(modeList[data[1] - 1]);
+                } else {
+                    txtCurMode.setText("Лента отключена");
+                }
+
+                    txtCurModeNum.setText(data[1] + "/49");
+
 
                 seekBright.setProgress(data[2]);
 
@@ -236,6 +232,54 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         menuBtnFav = menu.findItem(R.id.button_fav).getActionView().findViewById(R.id.favButton);
         menuBtnSave = menu.findItem(R.id.button_save).getActionView().findViewById(R.id.saveButton);
 
+        menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
+
+//        menuBtnOnOff.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//
+//            }
+//        });
+
+        menuBtnFav.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mCommander.addToFav(adapter.getCurrentMode());
+            }
+        });
+
+        menuBtnSave.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
+
+
+//        menu.findItem(R.id.swtOnOff).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+//            @Override
+//            public boolean onMenuItemClick(MenuItem item) {
+//                Toast.makeText(ControlActivity.this, "btnSwitch", Toast.LENGTH_SHORT).show();
+//                return true;
+//            }
+//        });
+//
+//        menu.findItem(R.id.button_fav).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+//            @Override
+//            public boolean onMenuItemClick(MenuItem item) {
+//                Toast.makeText(ControlActivity.this, "btnFav", Toast.LENGTH_SHORT).show();
+//                return true;
+//            }
+//        });
+//
+//        menu.findItem(R.id.button_save).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+//            @Override
+//            public boolean onMenuItemClick(MenuItem item) {
+//                Toast.makeText(ControlActivity.this, "btnSave", Toast.LENGTH_SHORT).show();
+//                return true;
+//            }
+//        });
+
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -244,7 +288,9 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         controlMenu = menu;
         if (isStripEnable){
             menuBtnOnOff.setEnabled(true);
+            menuBtnOnOff.setOnCheckedChangeListener(null);
             menuBtnOnOff.setChecked(true);
+            menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
             menuBtnSave.setEnabled(true);
             menuBtnSave.setEnabled(true);
         }
@@ -401,11 +447,25 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                     Log.d(TAG, "ControlActivity приняты данные для инициализации в размере: " + data.length);
                     break;
 
-                    //Переключение режимов
+                //Включение - выключение
+//                case 2:
+//                    if (data[1] == 1 && !menuBtnOnOff.isChecked()){
+//                        menuBtnOnOff.setOnCheckedChangeListener(null);
+//                        menuBtnOnOff.setChecked(true);
+//                        menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
+//                    }
+//                    else if (data[1] == 0 && menuBtnOnOff.isChecked()){
+//                        menuBtnOnOff.setOnCheckedChangeListener(null);
+//                        menuBtnOnOff.setChecked(false);
+//                        menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
+//                    }
+//                    break;
+
+                //Переключение режимов
                 case 3:
                 case 4:
                     Log.d(TAG, "ControlActivity принята команда: " + returnedCommand);
-                    adapter.updateCurrentMode(data[1]);
+                    adapter.setCurrentMode(data[1]);
                     txtCurMode.setText(modeList[data[1]-1]);
                     txtCurModeNum.setText(data[1] + "/49");
                     if(data[2] > 0){
@@ -418,7 +478,12 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                         seekSpeed.setProgress(0);
                     }
                     break;
+
+                case 6:
+                    Toast.makeText(ControlActivity.this, "Режим " + modeList[data[1]-1] + " был установлен стартовым" , Toast.LENGTH_SHORT).show();
+                    break;
             }
+
 
             Log.d(TAG, "ControlActivity приняты данные но ничего не изменено: " + returnedCommand);
         }
@@ -461,6 +526,17 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                     break;
             }
         }
+
+    //private CompoundButton.OnCheckedChangeListener = new OnCheckedChangeListener(){
+
+    private CompoundButton.OnCheckedChangeListener mOnCheckedChangeListener(){
+        return new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                mCommander.onOff();
+            }
+        };
+    }
 
     private SeekBar.OnSeekBarChangeListener seekBarListener = new SeekBar.OnSeekBarChangeListener () {
         @Override
