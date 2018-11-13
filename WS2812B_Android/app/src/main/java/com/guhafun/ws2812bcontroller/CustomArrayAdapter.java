@@ -90,10 +90,16 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
         return convertView;
     }
 
+    //Метод для установки текущего режима
     public void setCurrentMode(byte mode){
 
         currentMode = mode;
         notifyDataSetChanged();
+    }
+
+    //Метод для обновления текущего состояния режима (включен или исключен из плейлиста)
+    public void setActiveModes(byte index, byte state){
+        activeModes[index] = state;
     }
 
     public byte getCurrentMode() {

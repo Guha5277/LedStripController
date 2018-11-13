@@ -15,6 +15,9 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.CheckBox;
+import android.widget.CheckedTextView;
 import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ListView;
@@ -122,6 +125,19 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         //Получаем список режимов из XML-файла
         modeList = this.getResources().getStringArray(
                 R.array.mode_list);
+
+        choiceModeList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                //Получаем элемент списка
+                CheckedTextView cbx = view.findViewById(android.R.id.text1);
+
+                //Проверяем состояние
+                byte state = (cbx.isChecked()) ? (byte) 1 : (byte) 0;
+                mCommander.actDeactMode( (byte)position, state);
+            }
+        });
 
         //Инициализируем Handler
         mHandler = new HandlerControl();
@@ -237,12 +253,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
         menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
         menuAutoOnOff.setOnCheckedChangeListener(mOnCheckedAutoChangeListener());
-//        menuBtnOnOff.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//
-//            }
-//        });
 
         menuBtnFav.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -257,33 +267,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
             }
         });
-
-
-
-
-//        menu.findItem(R.id.swtOnOff).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-//            @Override
-//            public boolean onMenuItemClick(MenuItem item) {
-//                Toast.makeText(ControlActivity.this, "btnSwitch", Toast.LENGTH_SHORT).show();
-//                return true;
-//            }
-//        });
-//
-//        menu.findItem(R.id.button_fav).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-//            @Override
-//            public boolean onMenuItemClick(MenuItem item) {
-//                Toast.makeText(ControlActivity.this, "btnFav", Toast.LENGTH_SHORT).show();
-//                return true;
-//            }
-//        });
-//
-//        menu.findItem(R.id.button_save).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-//            @Override
-//            public boolean onMenuItemClick(MenuItem item) {
-//                Toast.makeText(ControlActivity.this, "btnSave", Toast.LENGTH_SHORT).show();
-//                return true;
-//            }
-//        });
 
         return super.onCreateOptionsMenu(menu);
     }
@@ -434,15 +417,31 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         }
     };
 
+
+
     //Слушатель для обновления UI принятыми данными
     BroadcastReceiver inputThreadListener = new BroadcastReceiver() {
+        private final byte INIT = 1;
+        private final byte ON_OFF = 2;
+        private final byte PREV_MODE = 3;
+        private final byte NEXT_MODE = 4;
+        private final byte PAUSE_PLAY = 5;
+        private final byte FAV_MODE = 6;
+        private final byte ACT_DEACT_MODE = 7;
+        private final byte AUTO_MODE = 8;
+        private final byte SET_COLOR = 9;
+        private final byte SET_BRIGHT = 10;
+        private final byte SET_SPEED = 11;
+        private final byte SAVE_SETTINGS = 12;
+
+
         @Override
         public void onReceive(Context context, Intent intent) {
             byte returnedCommand = intent.getByteExtra("msg", (byte) 0);
             byte[] data = intent.getByteArrayExtra("data");
             switch (returnedCommand){
 
-                case (byte) 1:
+                case INIT:
                     if (data.length == 54) {
                         isInitialDataRecieved = true;
                         isStripEnable = true;
@@ -453,7 +452,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                     break;
 
                 //Включение - выключение
-//                case 2:
+//                case ON_OFF:
 //                    if (data[1] == 1 && !menuBtnOnOff.isChecked()){
 //                        menuBtnOnOff.setOnCheckedChangeListener(null);
 //                        menuBtnOnOff.setChecked(true);
@@ -467,8 +466,8 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 //                    break;
 
                 //Переключение режимов
-                case 3:
-                case 4:
+                case PREV_MODE:
+                case NEXT_MODE:
                     Log.d(TAG, "ControlActivity принята команда: " + returnedCommand);
                     adapter.setCurrentMode(data[1]);
                     txtCurMode.setText(modeList[data[1]-1]);
@@ -484,19 +483,41 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                     }
                     break;
 
-                case 6:
+                case PAUSE_PLAY:
+                    //data[1] - находится ли лента на паузе (1 и 0)
+                    if (data[1] == 1)
+                        Toast.makeText(ControlActivity.this, "Пауза", Toast.LENGTH_SHORT).show();
+                    else
+                        Toast.makeText(ControlActivity.this, "Воспроизведение", Toast.LENGTH_SHORT).show();
+                    break;
+
+                case FAV_MODE:
                     Toast.makeText(ControlActivity.this, "Режим " + modeList[data[1]-1] + " был установлен стартовым" , Toast.LENGTH_SHORT).show();
                     break;
 
-                case 8:
-                    String result;
-                    if (data[1] == 1){
-                        result = "Включено";
+                case ACT_DEACT_MODE:
+                    //data[1] - номер режима
+                    //data[2] - состояние (1 и 0)
+                    if (data[2] == 1) {
+                        Toast.makeText(ControlActivity.this, "" + modeList[data[1]] + " добавлен в плейлист", Toast.LENGTH_SHORT).show();
                     }
                     else {
-                        result = "Выключено";
+                        Toast.makeText(ControlActivity.this, "" + modeList[data[1]] + " исключен из плейлиста", Toast.LENGTH_SHORT).show();
                     }
-                    Toast.makeText(ControlActivity.this, "Авторежим был установлен в состояние " + result  , Toast.LENGTH_SHORT).show();
+
+                    //Отправляем полученные данные в адаптер
+                    adapter.setActiveModes(data[1], data[2]);
+
+                    break;
+
+                case AUTO_MODE:
+                    //data[1] - состояние авторежима (1 и 0)
+                    if (data[1] == 1){
+                        Toast.makeText(ControlActivity.this, "Авторежим включен"  , Toast.LENGTH_SHORT).show();
+                    }
+                    else {
+                        Toast.makeText(ControlActivity.this, "Авторежим выключен"  , Toast.LENGTH_SHORT).show();
+                    }
                     break;
             }
 
