@@ -49,15 +49,9 @@ public class InputThread extends Thread{
         byte[] initializeData;
        // byte[] procedureData;
 
-        while(isNeedToListenData) {
+        while(true) {
             try {
                 if (inputStream.available() > 0) {
-//                    try {
-//                        Thread.sleep(10);
-//                    } catch (InterruptedException ie) {
-//                        Log.e(TAG, "InputThread: Ошибка приостановки потока!", ie);
-//                    }
-
                     count = inputStream.available();
 
                     Log.d(TAG, "InputThread: count: " + count);
@@ -78,13 +72,10 @@ public class InputThread extends Thread{
 
                     if (count == 54) {
                         Log.d(TAG, "InputThread: Доступно байт: " + count);
-                        //
+
                         data = new byte[count];
                         count = inputStream.read(data);
-                        //updateInitData(data);
                         messageProcessing(data);
-
-                        //ControlActivity.isInitialDataRecieved = true;
 
                         Log.d(TAG, "InputThread: Принято байт (=54): " + count + ", Содердимое: " + Arrays.toString(data));
                     }
@@ -93,25 +84,24 @@ public class InputThread extends Thread{
 
                         byte[] temp;
                         temp = new byte[count];
+                        String message = temp.toString();
                         inputStream.read(temp);
+
+                        Log.d(TAG, message);
                     }
                 }
 
                 }catch(IOException ie){
-                setEnabled(false);
                 Log.e(TAG, "InputThread: Ошибка при получении данных!", ie);
             }
         }
-        Log.d(TAG, "InputThread поток завершен");
     }
 
-    public void setEnabled(boolean status){
-        isNeedToListenData = status;
-    }
-
-//    public boolean getEnabled(){
-//        return isNeedToListenData;
+//    public void setEnabled(boolean status){
+//        isNeedToListenData = status;
 //    }
+
+
 
     //Метод для отпраки данных в главный поток
     private void messageProcessing(byte [] inputData){

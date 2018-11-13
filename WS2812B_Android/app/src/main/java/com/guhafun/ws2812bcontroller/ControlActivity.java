@@ -70,7 +70,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     ImageButton menuBtnSave;
     Switch menuAutoOnOff;
 
-
     TextView txtCurMode;
     TextView txtCurModeNum;
 
@@ -105,14 +104,14 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         txtCurMode = findViewById(R.id.txtCurMode);
         txtCurModeNum = findViewById(R.id.txtCurNumber);
         choiceModeList = findViewById(R.id.modeListView);
-        seekSpeed = findViewById(R.id.seekSpeed);
         seekBright = findViewById(R.id.seekBright);
         seekBright.setOnSeekBarChangeListener(seekBarListener);
-        //seekBright.setMin(5);
+        seekSpeed = findViewById(R.id.seekSpeed);
         btnPrev = findViewById(R.id.btnPrev);
         btnPause = findViewById(R.id.btnPause);
         btnNext = findViewById(R.id.btnNext);
 
+        //Добавление слушателей для кнопок управления плейлистом
         btnPrev.setOnClickListener(this);
         btnNext.setOnClickListener(this);
         btnPause.setOnClickListener(this);
@@ -120,21 +119,24 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         //Получаем потоки
         getStreams();
 
+        //Инициализация фонового потока отправки комманд на МК
         mCommander = new Commander(mOutputStream);
 
         //Получаем список режимов из XML-файла
         modeList = this.getResources().getStringArray(
                 R.array.mode_list);
 
+        //Добавление слушателя для элементов списка меню (чекбоксы - включение/исключение режима из плейлиста)
         choiceModeList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
                 //Получаем элемент списка
                 CheckedTextView cbx = view.findViewById(android.R.id.text1);
 
                 //Проверяем состояние
                 byte state = (cbx.isChecked()) ? (byte) 1 : (byte) 0;
+
+                //Отправляем данные на МК
                 mCommander.actDeactMode( (byte)position, state);
             }
         });
@@ -145,11 +147,12 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         //Регистрируем двух слушателей изменения состояния подключения
         registerReceiver(connectionStatusChanged, new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED));
         registerReceiver(connectionStatusChanged, new IntentFilter(BluetoothDevice.ACTION_ACL_CONNECTED));
+        //Регистрируем локального слушателя для приема данных от InputThread'a
         LocalBroadcastManager.getInstance(this).registerReceiver(inputThreadListener, new IntentFilter(DATA_MESSAGE));
 
         //Инициализация и запуск фонового потока, отвечающего за прием данных
         mInputThread = new InputThread(mInputStream, this);
-        mInputThread.setEnabled(true);
+        //mInputThread.setEnabled(true);
         mInputThread.start();
 
 //        initializeData();
@@ -185,7 +188,8 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                     txtCurModeNum.setText(data[1] + "/49");
 
 
-                seekBright.setProgress(data[2]);
+                seekBright.setProgress(data[2] & 0xFF);
+                Log.d(TAG, "Bright from (byte): " + data[2] + ", to(int): " + (data[1] & 0xFF) );
 
                 //Выключаем ползунок скорости, если у текущего режима отсутствует возможность ее регулировки
                 if (data[4] == 0){
@@ -264,7 +268,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         menuBtnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                mCommander.saveSettings();
             }
         });
 
@@ -341,7 +345,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                     getStreams();
 
                     InputThread inputThread = new InputThread(mInputStream, ControlActivity.this);
-                    inputThread.setEnabled(true);
+                    //inputThread.setEnabled(true);
                     inputThread.start();
 
                     mCommander = new Commander(mOutputStream);
@@ -416,9 +420,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
             }
         }
     };
-
-
-
+    
     //Слушатель для обновления UI принятыми данными
     BroadcastReceiver inputThreadListener = new BroadcastReceiver() {
         private final byte INIT = 1;
@@ -433,7 +435,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         private final byte SET_BRIGHT = 10;
         private final byte SET_SPEED = 11;
         private final byte SAVE_SETTINGS = 12;
-
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -519,10 +520,16 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                         Toast.makeText(ControlActivity.this, "Авторежим выключен"  , Toast.LENGTH_SHORT).show();
                     }
                     break;
+                    
+                case SAVE_SETTINGS:
+                    //data[1] - может принимать только значение 1 - настройки сохранены
+                    if (data[1] == 1){
+                        Toast.makeText(ControlActivity.this, "Настройки сохранены!", Toast.LENGTH_SHORT).show();
+                    }
+                    else {
+                        Toast.makeText(ControlActivity.this, "Ошибка сохранения настроек!", Toast.LENGTH_SHORT).show();
+                    }
             }
-
-
-            Log.d(TAG, "ControlActivity приняты данные но ничего не изменено: " + returnedCommand);
         }
     };
 
