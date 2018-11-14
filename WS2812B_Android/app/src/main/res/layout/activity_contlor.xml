@@ -151,7 +151,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/menu_item_margin"
                 android:layout_marginEnd="@dimen/padding_speed_bright"
-                android:max="255"
+                android:max="18"
                 tools:layout_editor_absoluteX="91dp"
                 tools:layout_editor_absoluteY="386dp" />
         </TableRow>

@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.HashMap;
 
 public class ControlActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -51,6 +52,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     private final Byte GET_INITIAL_DATA = 1;
     public static String DATA_MESSAGE = "com.guhafun.message";
     private boolean isStripEnable = false;
+    private boolean isAutoModeEnable = false;
 
     //Флаг используемы для приема начальных значений от МК
     static boolean isInitialDataRecieved = false;
@@ -107,6 +109,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         seekBright = findViewById(R.id.seekBright);
         seekBright.setOnSeekBarChangeListener(seekBarListener);
         seekSpeed = findViewById(R.id.seekSpeed);
+        seekSpeed.setOnSeekBarChangeListener(seekBarListener);
         btnPrev = findViewById(R.id.btnPrev);
         btnPause = findViewById(R.id.btnPause);
         btnNext = findViewById(R.id.btnNext);
@@ -179,16 +182,33 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                     }
 
                 seekBright.setProgress(data[2] & 0xFF);
+
                 Log.d(TAG, "Bright from (byte): " + data[2] + ", to(int): " + (data[2] & 0xFF) );
 
                 //Выключаем ползунок скорости, если у текущего режима отсутствует возможность ее регулировки
+
                 if (data[4] == 0){
                     seekSpeed.setEnabled(false);
+
+                    seekSpeed.setOnSeekBarChangeListener(null);
                     seekSpeed.setProgress(0);
+                    seekSpeed.setOnSeekBarChangeListener(seekBarListener);
                 }
                 else {
-                    seekSpeed.setMax(data[4] * 2);
-                    seekSpeed.setProgress(data[4]);
+                    seekSpeed.setTag(0);
+                    seekSpeed.setEnabled(true);
+                    seekSpeed.setTag(data[4]);
+
+                    seekSpeed.setOnSeekBarChangeListener(null);
+                    seekSpeed.setProgress(9);
+                    seekSpeed.setOnSeekBarChangeListener(seekBarListener);
+                }
+
+                if (data[3] == 1){
+                    isAutoModeEnable = true;
+                }
+                else {
+                    isAutoModeEnable = false;
                 }
 
                 //Оповещаем меню
@@ -275,34 +295,48 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
             menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
             menuBtnSave.setEnabled(true);
             menuBtnSave.setEnabled(true);
+            menuAutoOnOff.setEnabled(true);
         }
-        else{
+        else {
             menuBtnOnOff.setEnabled(false);
             menuBtnSave.setEnabled(false);
             menuBtnSave.setEnabled(false);
+            menuAutoOnOff.setEnabled(false);
         }
 
-       // menuBtnOnOff.setChecked(true);
+        if (isAutoModeEnable) {
+            menuAutoOnOff.setOnCheckedChangeListener(null);
+            menuAutoOnOff.setChecked(true);
+            menuAutoOnOff.setOnCheckedChangeListener(mOnCheckedAutoChangeListener());
+        }
+        else {
+            menuAutoOnOff.setOnCheckedChangeListener(null);
+            menuAutoOnOff.setChecked(false);
+            menuAutoOnOff.setOnCheckedChangeListener(mOnCheckedAutoChangeListener());
+        }
+
+
+
         return super.onPrepareOptionsMenu(menu);
     }
 
     //Обработка нажатий на элементы меню
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item){
-        Toast.makeText(this, item.getItemId(), Toast.LENGTH_SHORT).show();
-        switch(item.getItemId()){
-            case R.id.swtOnOff:
-                Toast.makeText(this, "switch on off", Toast.LENGTH_SHORT).show();
-                break;
-            case R.id.button_fav:
-                Toast.makeText(this, "button fav", Toast.LENGTH_SHORT).show();
-                break;
-            case R.id.button_save:
-                Toast.makeText(this, "button save", Toast.LENGTH_SHORT).show();
-                break;
-        }
-        return super.onOptionsItemSelected(item);
-    }
+//    @Override
+//    public boolean onOptionsItemSelected(MenuItem item){
+//        Toast.makeText(this, item.getItemId(), Toast.LENGTH_SHORT).show();
+//        switch(item.getItemId()){
+//            case R.id.swtOnOff:
+//                Toast.makeText(this, "switch on off", Toast.LENGTH_SHORT).show();
+//                break;
+//            case R.id.button_fav:
+//                Toast.makeText(this, "button fav", Toast.LENGTH_SHORT).show();
+//                break;
+//            case R.id.button_save:
+//                Toast.makeText(this, "button save", Toast.LENGTH_SHORT).show();
+//                break;
+//        }
+//        return super.onOptionsItemSelected(item);
+//    }
 
     //Handler для связи с потоком ConnectThread
     class HandlerControl extends Handler {
@@ -460,18 +494,25 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 //Переключение режимов
                 case PREV_MODE:
                 case NEXT_MODE:
+                case SET_MODE_TO:
                     Log.d(TAG, "ControlActivity принята команда: " + returnedCommand);
                     adapter.setCurrentMode(data[1]);
                     txtCurMode.setText(modeList[data[1]-1]);
                     txtCurModeNum.setText(data[1] + "/49");
+
                     if(data[2] > 0){
                         seekSpeed.setEnabled(true);
-                        seekSpeed.setMax(data[2] * 2);
-                        seekSpeed.setProgress(data[2]);
+                        seekSpeed.setTag(data[2]);
+                        seekSpeed.setOnSeekBarChangeListener(null);
+                        seekSpeed.setProgress(9);
+                        seekSpeed.setOnSeekBarChangeListener(seekBarListener);
                     }
                     else {
+                        seekSpeed.setTag(0);
                         seekSpeed.setEnabled(false);
+                        seekSpeed.setOnSeekBarChangeListener(null);
                         seekSpeed.setProgress(0);
+                        seekSpeed.setOnSeekBarChangeListener(seekBarListener);
                     }
                     break;
 
@@ -505,11 +546,14 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 case AUTO_MODE:
                     //data[1] - состояние авторежима (1 и 0)
                     if (data[1] == 1){
+                        //isAutoModeEnable = true;
                         Toast.makeText(ControlActivity.this, "Авторежим включен"  , Toast.LENGTH_SHORT).show();
                     }
                     else {
+                        //isAutoModeEnable = false;
                         Toast.makeText(ControlActivity.this, "Авторежим выключен"  , Toast.LENGTH_SHORT).show();
                     }
+                    //invalidateOptionsMenu();
                     break;
                     
                 case SAVE_SETTINGS:
@@ -521,14 +565,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                         Toast.makeText(ControlActivity.this, "Ошибка сохранения настроек!", Toast.LENGTH_SHORT).show();
                     }
                     break;
-
-                case SET_MODE_TO:
-                    //data[1] - новый текущий режим
-
-                    txtCurMode.setText(modeList[data[1]-1]);
-                    txtCurModeNum.setText(data[1] + "/49");
-
-                    adapter.setCurrentMode(data[1]);
             }
         }
     };
@@ -571,8 +607,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
             }
         }
 
-    //private CompoundButton.OnCheckedChangeListener = new OnCheckedChangeListener(){
-
+    //Слушатель переключения включения-выключения режима
     private CompoundButton.OnCheckedChangeListener mOnCheckedChangeListener(){
         return new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -582,16 +617,22 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         };
     }
 
+    //Слушатель переключателя включения-выключения авторежима
     private CompoundButton.OnCheckedChangeListener mOnCheckedAutoChangeListener(){
         return new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                       // isAutoModeEnable = !isChecked;
                         mCommander.setAutoMode(isChecked);
+                      //  invalidateOptionsMenu();
+
+                        Log.d(TAG, "Listener");
                 }
         };
     }
 
     private SeekBar.OnSeekBarChangeListener seekBarListener = new SeekBar.OnSeekBarChangeListener () {
+
         @Override
         public void onStartTrackingTouch(SeekBar seekBar) {
 
@@ -604,9 +645,42 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
+            HashMap<Integer, Double> convertValue = new HashMap<>();
+            convertValue.put(0, 1.9);
+            convertValue.put(1, 1.8);
+            convertValue.put(2, 1.7);
+            convertValue.put(3, 1.6);
+            convertValue.put(4, 1.5);
+            convertValue.put(5, 1.4);
+            convertValue.put(6, 1.3);
+            convertValue.put(7, 1.2);
+            convertValue.put(8, 1.1);
+            convertValue.put(9, 1.0);
+            convertValue.put(10, 0.9);
+            convertValue.put(11, 0.8);
+            convertValue.put(12, 0.7);
+            convertValue.put(13, 0.6);
+            convertValue.put(14, 0.5);
+            convertValue.put(15, 0.4);
+            convertValue.put(16, 0.3);
+            convertValue.put(17, 0.2);
+            convertValue.put(18, 0.1);
+
             switch(seekBar.getId()){
                 case R.id.seekBright:
                     mCommander.setBright((byte)progress);
+                    break;
+
+                case R.id.seekSpeed:
+                    int value = (Byte) seekSpeed.getTag();
+
+                    double speed = convertValue.get(progress) * value;
+
+                    mCommander.setSpeed((byte) speed);
+
+                    //Log.d(TAG, "SeekSpeed Value: " + convertValue.get(progress) * value);
+                    break;
             }
         }
     };
@@ -623,4 +697,3 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         if (!mInputThread.isAlive()) Log.d(TAG, "InputThread был остановлен методом interrupt()");
     }
 }
-

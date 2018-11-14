@@ -11,10 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
-import android.widget.CheckedTextView;
-import android.widget.CompoundButton;
-import android.widget.ListView;
-import android.widget.TabHost;
 import android.widget.TextView;
 
 import com.example.ws2812bcontroller.R;
@@ -45,6 +41,8 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
 
         //Копируем из принятых данных только часть массива, содержащую информацию о включенных/выключенных режимах
         this.activeModes = Arrays.copyOfRange(activeModes, 5, activeModes.length);
+
+        //Получаем вызываемый контекст
         mInflater = context.getLayoutInflater();
 
         //Получаем цвет фона для активированного режима
@@ -53,6 +51,7 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
 
     }
 
+    //Класс хранящий составные элементы строки ListView
     static class ViewHolder {
         TextView mText;
         CheckBox mCheckBox;
@@ -63,93 +62,97 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
         ViewHolder holder;
 
+        //Срабатывает только при первой инициализации ListView-элемента
         if (convertView == null){
             convertView = mInflater.inflate(R.layout.list_item_multiple_choice, null);
 
+            //Инициализиурем объект Holder, присваиваем элементам ссылки на view-элементы
             holder = new ViewHolder();
             holder.mText = convertView.findViewById(R.id.listModeName);
             holder.mCheckBox = convertView.findViewById(R.id.listCheckbox);
 
+            //Сохраняем объект Holder для последующего использования
             convertView.setTag(holder);
 
+            //Добавляем теги с позицией для текущих элементов
             holder.mText.setTag(position);
             holder.mCheckBox.setTag(position);
 
+            //Добавляем слушателя для текста
             holder.mText.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    //Получаем позицию элемента в списке
                    int position = (Integer)v.getTag();
 
-                   TextView txt = v.findViewById(R.id.listModeName);
+                  // TextView txt = v.findViewById(R.id.listModeName);
 
-                   if (currentMode != position) {
+                    //Проверяем, происходит ли нажатие не на текущий воспроизводимый элемент (чтобы исключить лишнюю работу) и отправляем сообщение
+                   if (currentMode - 1  != position) {
                        mCommander.setModeTo((byte) position);
                    }
-                  // txt.setText("Клик на элементе списка: " + position);
-
                 }
             });
 
+            //Добавляем слушателя для CheckBox'a
             holder.mCheckBox.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    //Получаем позицию элемента в списке
                     int position = (Integer)v.getTag();
+                    //Получаем CheckBox
                     CheckBox cbx = v.findViewById(R.id.listCheckbox);
 
-                    byte state = (cbx.isChecked()) ? (byte) 1 : 0;
-
-                    Log.d(TAG, "position: " + position + ", state: " + state);
-
-                    mCommander.actDeactMode((byte)position, state);
+                    //Отправляем сообщение
+                    mCommander.actDeactMode((byte)position, cbx.isChecked());
 
                 }
             });
 
 
         }
+        //Вызывается, если ListView элемент уже был инициализирован
         else {
             holder = (ViewHolder) convertView.getTag();
         }
 
-        //Обновляем тег
+        //Обновляем позиции элементов
         holder.mText.setTag(position);
         holder.mCheckBox.setTag(position);
 
+        //Задаем текст
         holder.mText.setText(names[position]);
 
-
+        //Если текущий элемент вопспроизводится
         if (currentMode - 1 == position){
+            //Устанавливаем соответствующие цвета для
             convertView.setBackgroundColor(colorActive);
-
             holder.mText.setTextColor(Color.WHITE);
             holder.mCheckBox.setTextColor(Color.WHITE);
         }
+        //Если нет
         else {
-//            convertView.setBackgroundColor(Color.WHITE);
+            //Устанавливаем соответствующие цвета
             convertView.setBackgroundColor(colorDeactive);
-
             holder.mText.setTextColor(Color.BLACK);
             holder.mCheckBox.setTextColor(Color.BLACK);
         }
 
-
+        //Если текущие ListView - элемент включен в плейлист то установить галку в CheckBox
         if (activeModes[position] == 1) {
-//            ((ListView) parent).setItemChecked(position, true);
-//             CheckBox v = parent.findViewById(R.id.listCheckbox);
-//             v.setChecked(true);
             holder.mCheckBox.setChecked(true);
 
         }
+        //... Иначе - снять, соответственно
         else {
-//            ((ListView) parent).setItemChecked(position, false);
             holder.mCheckBox.setChecked(false);
         }
+
         return convertView;
     }
 
     //Метод для установки текущего режима
     public void setCurrentMode(byte mode){
-
         currentMode = mode;
         notifyDataSetChanged();
     }
@@ -159,9 +162,8 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
         activeModes[index] = state;
     }
 
+    //Метод возвращает текущйи режим
     public byte getCurrentMode() {
         return currentMode;
     }
-
-
 }

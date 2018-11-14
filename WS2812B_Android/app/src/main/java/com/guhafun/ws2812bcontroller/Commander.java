@@ -1,7 +1,6 @@
 package com.guhafun.ws2812bcontroller;
 
 import android.util.Log;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
@@ -60,14 +59,17 @@ public class Commander {
         sendMessage(FAV_MODE, modeIndex);
     }
 
-    public void actDeactMode(byte mode, byte state){
-        sendMessage(ACT_DEACT_MODE, mode, state);
+    public void actDeactMode(byte mode, boolean state){
+        //Формируем сообщение для отпраки 1 - включить в список, 0 - исключить из списка, в зависимоти от полученного результата
+        byte result = (state) ? (byte) 1 : 0;
+
+        sendMessage(ACT_DEACT_MODE, mode, result);
     }
 
     public void setAutoMode(boolean state){
-        byte onOffValue;
+        //byte onOffValue;
 
-        onOffValue = (state) ? (byte) 1 : 0;
+        byte onOffValue = (state) ? (byte) 1 : 0;
 
         sendMessage(AUTO_MODE, onOffValue);
     }

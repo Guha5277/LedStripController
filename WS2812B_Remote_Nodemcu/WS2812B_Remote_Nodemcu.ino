@@ -247,7 +247,8 @@ void sendResponce (byte a) {
     case 1: sendSettings(); break;
     case 2: Serial.write(isStripOn); break;
     case 3:
-    case 4: sendCurrentMode(); break;
+    case 4: 
+    case 13: sendCurrentMode(); break;
     case 5: Serial.write(isStripPaused); break;
     case 6: Serial.write(startMode); break;
     case 7: Serial.write(command[1]); Serial.write(ledModes[command[1]]); break;
@@ -256,7 +257,7 @@ void sendResponce (byte a) {
     case 10: Serial.write(max_bright); break;
     case 11: Serial.write(thisdelay); break;
     case 12: Serial.write(1); break;
-    case 13: Serial.write(ledMode); break;
+   // case 13: Serial.write(ledMode); break;
 
   }
 }

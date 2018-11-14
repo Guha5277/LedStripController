@@ -6,7 +6,6 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Array;
 import java.util.Arrays;
 
 //Класс реализующий "просллушку" входящего потока на наличие сообщений и их считывание
@@ -14,7 +13,6 @@ public class InputThread extends Thread{
     private String TAG = "ConLog";
     private InputStream inputStream;
     private byte[] data;
-    private byte[] initializeData = new byte[54];
 
     private final int INITIALIZE = 1;
     private final int ON_OFF = 2;
@@ -30,10 +28,6 @@ public class InputThread extends Thread{
     private final byte SAVE_SETTINGS = 12;
     private final byte SET_MODE_TO = 13;
 
-
-
-    //Флаг с актуальным состоянием потока
-    private boolean isNeedToListenData = false;
     private Context mContext = null;
 
     protected InputThread(InputStream inStream, Context context){
@@ -47,33 +41,35 @@ public class InputThread extends Thread{
         Log.d(TAG, "InputThread поток запущен");
         int count;
 
-        byte[] initializeData;
-       // byte[] procedureData;
-
         while(true) {
             try {
+                //Если в буффере есть доступные данные для считывания
                 if (inputStream.available() > 0) {
+                    //Сохраняем количество байт для считывания в счетчик
                     count = inputStream.available();
 
                     Log.d(TAG, "InputThread: count: " + count);
 
+                    //Проверяем их количество
                     if (count > 0 && count < 54) {
 
                         Log.d(TAG, "InputThread: Доступно байт: " + count);
                         //Присваиваем счетчику количество доступных байт, создаем эквивалентный счетчику массив, считываем данные и отправляем изменения в главный поток
                         count = inputStream.available();
+
+                        //Считываем и отправляем полученные данные
                         data = new byte[count];
-                        count = inputStream.read(data);
+                        inputStream.read(data);
                         messageProcessing(data);
 
                         Log.d(TAG, "InputThread: Принято байт (<54): " + count + ", Содердимое: " + Arrays.toString(data));
-
-
                     }
 
+                    //Если пришло 54 байта - это данные инициализации, которые приходят при подключении
                     if (count == 54) {
                         Log.d(TAG, "InputThread: Доступно байт: " + count);
 
+                        //Считываем и отправляем полученные данные
                         data = new byte[count];
                         count = inputStream.read(data);
                         messageProcessing(data);
@@ -81,14 +77,12 @@ public class InputThread extends Thread{
                         Log.d(TAG, "InputThread: Принято байт (=54): " + count + ", Содердимое: " + Arrays.toString(data));
                     }
 
+                    //Если пришла какая-то неведомая фигня, то просто очищаем буфер
                     if (count > 54){
 
                         byte[] temp;
                         temp = new byte[count];
-//                        String message = temp.toString();
                         inputStream.read(temp);
-//
-//                        Log.d(TAG, message);
                     }
                 }
 
@@ -100,7 +94,7 @@ public class InputThread extends Thread{
 
     //Метод для отпраки данных в главный поток
     private void messageProcessing(byte [] inputData){
-        //Здесь проверяется соответствие длины массива(кол-ва байт) которые может отправить МК при разных коммандах , в случае расхождений метод прерывается
+        //Здесь проверяется соответствие длины принятого массива(кол-ва байт) которые может отправить МК при разных коммандах, в случае расхождений метод прерывается...
         switch(inputData[0]){
             case INITIALIZE:
                 if (inputData.length != 54) {
@@ -115,7 +109,6 @@ public class InputThread extends Thread{
             //case SET_BRIGHT:
             case SET_SPEED:
             case SAVE_SETTINGS:
-            case SET_MODE_TO:
                 if (inputData.length != 2) {
                     return;
                 }
@@ -124,6 +117,7 @@ public class InputThread extends Thread{
             case PREV_MODE:
             case NEXT_MODE:
             case ACT_DEACT_MODE:
+            case SET_MODE_TO:
                 if (inputData.length != 3) {
                     return;
                 }
@@ -135,8 +129,7 @@ public class InputThread extends Thread{
                 }
                 break;
 
-
-                //Если пришедшая команда неивестна(пришёл хлам) - прерываем метод
+            //Если пришедшая команда неивестна(пришёл хлам) - прерываем метод
             default:
                 return;
         }
@@ -149,10 +142,5 @@ public class InputThread extends Thread{
         Log.d(TAG, "InputThread отправлена команда: " + inputData[0] + ", с содержимым: " + Arrays.toString(inputData));
 
         LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
-
-    }
-
-    private void updateInitData(byte[] data){
-        initializeData = Arrays.copyOf(data, 54);
     }
 }
