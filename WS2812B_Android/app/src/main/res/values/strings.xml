@@ -15,4 +15,7 @@
     <string name="btnPause">Button Pause</string>
     <string name="bright">Bright</string>
     <string name="speed">Speed</string>
+    <string name="modesTotal" translatable="false">/49</string>
+    <string name="modePausedOrOff" translatable="false">0/49</string>
+
 </resources>

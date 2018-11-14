@@ -12,25 +12,9 @@ import java.util.Arrays;
 public class InputThread extends Thread{
     private String TAG = "ConLog";
     private InputStream inputStream;
-    private byte[] data;
+    private Context mContext;
 
-    private final int INITIALIZE = 1;
-    private final int ON_OFF = 2;
-    private final byte PREV_MODE = 3;
-    private final byte NEXT_MODE = 4;
-    private final byte PAUSE_PLAY = 5;
-    private final byte FAV_MODE = 6;
-    private final byte ACT_DEACT_MODE = 7;
-    private final byte AUTO_MODE = 8;
-    private final byte SET_COLOR = 9;
-    private final byte SET_BRIGHT = 10;
-    private final byte SET_SPEED = 11;
-    private final byte SAVE_SETTINGS = 12;
-    private final byte SET_MODE_TO = 13;
-
-    private Context mContext = null;
-
-    protected InputThread(InputStream inStream, Context context){
+    InputThread(InputStream inStream, Context context){
         Log.d(TAG, "InputThread инициализирован");
         inputStream = inStream;
         mContext = context;
@@ -39,7 +23,10 @@ public class InputThread extends Thread{
     @Override
     public void run(){
         Log.d(TAG, "InputThread поток запущен");
+
         int count;
+        int readCount;
+        byte[] data;
 
         while(true) {
             try {
@@ -59,10 +46,10 @@ public class InputThread extends Thread{
 
                         //Считываем и отправляем полученные данные
                         data = new byte[count];
-                        inputStream.read(data);
+                        readCount = inputStream.read(data);
                         messageProcessing(data);
 
-                        Log.d(TAG, "InputThread: Принято байт (<54): " + count + ", Содердимое: " + Arrays.toString(data));
+                        Log.d(TAG, "InputThread: Принято байт (<54): " + readCount + ", Содердимое: " + Arrays.toString(data));
                     }
 
                     //Если пришло 54 байта - это данные инициализации, которые приходят при подключении
@@ -71,10 +58,10 @@ public class InputThread extends Thread{
 
                         //Считываем и отправляем полученные данные
                         data = new byte[count];
-                        count = inputStream.read(data);
+                        readCount = inputStream.read(data);
                         messageProcessing(data);
 
-                        Log.d(TAG, "InputThread: Принято байт (=54): " + count + ", Содердимое: " + Arrays.toString(data));
+                        Log.d(TAG, "InputThread: Принято байт (=54): " + readCount + ", Содердимое: " + Arrays.toString(data));
                     }
 
                     //Если пришла какая-то неведомая фигня, то просто очищаем буфер
@@ -82,7 +69,8 @@ public class InputThread extends Thread{
 
                         byte[] temp;
                         temp = new byte[count];
-                        inputStream.read(temp);
+                        readCount = inputStream.read(temp);
+                        Log.d(TAG, "InputThread: Уничтожено байт: " + readCount + ", Содердимое: " + Arrays.toString(temp));
                     }
                 }
 
@@ -94,6 +82,20 @@ public class InputThread extends Thread{
 
     //Метод для отпраки данных в главный поток
     private void messageProcessing(byte [] inputData){
+        final int INITIALIZE = 1;
+        final int ON_OFF = 2;
+        final byte PREV_MODE = 3;
+        final byte NEXT_MODE = 4;
+        final byte PAUSE_PLAY = 5;
+        final byte FAV_MODE = 6;
+        final byte ACT_DEACT_MODE = 7;
+        final byte AUTO_MODE = 8;
+        final byte SET_COLOR = 9;
+       // final byte SET_BRIGHT = 10;
+        final byte SET_SPEED = 11;
+        final byte SAVE_SETTINGS = 12;
+        final byte SET_MODE_TO = 13;
+
         //Здесь проверяется соответствие длины принятого массива(кол-ва байт) которые может отправить МК при разных коммандах, в случае расхождений метод прерывается...
         switch(inputData[0]){
             case INITIALIZE:

@@ -13,11 +13,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.CheckBox;
-import android.widget.CheckedTextView;
 import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ListView;
@@ -25,13 +21,11 @@ import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.example.ws2812bcontroller.R;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
-import java.util.HashMap;
 
 public class ControlActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -48,9 +42,10 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     //Строковый массив с названием режимов
     String[] modeList;
 
-    //Константы-запросы к МК
-    private final Byte GET_INITIAL_DATA = 1;
+    //Строка для связи LocalBroadcastReceiver и InputThread
     public static String DATA_MESSAGE = "com.guhafun.message";
+
+    //Два флага-состояния включенности ленты и авторежима
     private boolean isStripEnable = false;
     private boolean isAutoModeEnable = false;
 
@@ -150,6 +145,8 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         Log.d(TAG, "ControlActivity создано");
     }
 
+
+
     //Обновление интерфейса в соотвествтии с актуальными данными
     private void updateUI(byte[] data){
 
@@ -167,19 +164,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
                 choiceModeList.setEnabled(true);
 
-                if(data[1] != 0 && data[1] != 99) {
-                    txtCurMode.setText(modeList[data[1] - 1]);
-                } else if (data[1] == 0){
-                    txtCurMode.setText("Лента отключена");
-                } else if (data[1] == 99) {
-                    txtCurModeNum.setText("Пауза");
-                }
-
-                    if (data[1] < 99) {
-                        txtCurModeNum.setText(data[1] + "/49");
-                    } else {
-                        txtCurModeNum.setText("?/49");
-                    }
+                setPlaylistTitle(data[1]);
 
                 seekBright.setProgress(data[2] & 0xFF);
 
@@ -204,15 +189,36 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                     seekSpeed.setOnSeekBarChangeListener(seekBarListener);
                 }
 
-                if (data[3] == 1){
-                    isAutoModeEnable = true;
-                }
-                else {
-                    isAutoModeEnable = false;
-                }
+//                if (data[3] == 1){
+//                    isAutoModeEnable = true;
+//                }
+//                else {
+//                    isAutoModeEnable = false;
+//                }
+
+                isAutoModeEnable = (data[3] == 1);
 
                 //Оповещаем меню
                 invalidateOptionsMenu();
+    }
+
+    private void setPlaylistTitle(byte mode) {
+        switch (mode){
+            case 0:
+                txtCurMode.setText("Лента отключена");
+                txtCurModeNum.setText(R.string.modePausedOrOff);
+                break;
+
+            case 99:
+                txtCurMode.setText("Пауза");
+                txtCurModeNum.setText(R.string.modePausedOrOff);
+                break;
+
+            default:
+                txtCurMode.setText(modeList[mode - 1]);
+                txtCurModeNum.setText(mode + R.string.modesTotal);
+                break;
+        }
     }
 
     void disableUI() {
@@ -320,26 +326,8 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         return super.onPrepareOptionsMenu(menu);
     }
 
-    //Обработка нажатий на элементы меню
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item){
-//        Toast.makeText(this, item.getItemId(), Toast.LENGTH_SHORT).show();
-//        switch(item.getItemId()){
-//            case R.id.swtOnOff:
-//                Toast.makeText(this, "switch on off", Toast.LENGTH_SHORT).show();
-//                break;
-//            case R.id.button_fav:
-//                Toast.makeText(this, "button fav", Toast.LENGTH_SHORT).show();
-//                break;
-//            case R.id.button_save:
-//                Toast.makeText(this, "button save", Toast.LENGTH_SHORT).show();
-//                break;
-//        }
-//        return super.onOptionsItemSelected(item);
-//    }
-
     //Handler для связи с потоком ConnectThread
-    class HandlerControl extends Handler {
+   class HandlerControl extends Handler {
         //Счетчик переподключений в случае потери связи
         int reconnectCount = 1;
         @Override
@@ -385,6 +373,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     //Поток инициализации графическо интерфейса первичными данными
     class ThreadInitialize extends Thread {
         int count = 0;
+        private final Byte GET_INITIAL_DATA = 1;
         @Override
         public void run() {
             super.run();
@@ -448,16 +437,16 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     //Слушатель для обновления UI принятыми данными
     BroadcastReceiver inputThreadListener = new BroadcastReceiver() {
         private final byte INIT = 1;
-        private final byte ON_OFF = 2;
+        //private final byte ON_OFF = 2;
         private final byte PREV_MODE = 3;
         private final byte NEXT_MODE = 4;
         private final byte PAUSE_PLAY = 5;
         private final byte FAV_MODE = 6;
         private final byte ACT_DEACT_MODE = 7;
         private final byte AUTO_MODE = 8;
-        private final byte SET_COLOR = 9;
-        private final byte SET_BRIGHT = 10;
-        private final byte SET_SPEED = 11;
+       // private final byte SET_COLOR = 9;
+       // private final byte SET_BRIGHT = 10;
+       // private final byte SET_SPEED = 11;
         private final byte SAVE_SETTINGS = 12;
         private final byte SET_MODE_TO = 13;
 
@@ -497,8 +486,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 case SET_MODE_TO:
                     Log.d(TAG, "ControlActivity принята команда: " + returnedCommand);
                     adapter.setCurrentMode(data[1]);
-                    txtCurMode.setText(modeList[data[1]-1]);
-                    txtCurModeNum.setText(data[1] + "/49");
+                    setPlaylistTitle(data[1]);
 
                     if(data[2] > 0){
                         seekSpeed.setEnabled(true);
@@ -646,26 +634,28 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
-            HashMap<Integer, Double> convertValue = new HashMap<>();
-            convertValue.put(0, 1.9);
-            convertValue.put(1, 1.8);
-            convertValue.put(2, 1.7);
-            convertValue.put(3, 1.6);
-            convertValue.put(4, 1.5);
-            convertValue.put(5, 1.4);
-            convertValue.put(6, 1.3);
-            convertValue.put(7, 1.2);
-            convertValue.put(8, 1.1);
-            convertValue.put(9, 1.0);
-            convertValue.put(10, 0.9);
-            convertValue.put(11, 0.8);
-            convertValue.put(12, 0.7);
-            convertValue.put(13, 0.6);
-            convertValue.put(14, 0.5);
-            convertValue.put(15, 0.4);
-            convertValue.put(16, 0.3);
-            convertValue.put(17, 0.2);
-            convertValue.put(18, 0.1);
+//            HashMap<Integer, Double> convertValue = new HashMap<>();
+//            convertValue.put(0, 1.9);
+//            convertValue.put(1, 1.8);
+//            convertValue.put(2, 1.7);
+//            convertValue.put(3, 1.6);
+//            convertValue.put(4, 1.5);
+//            convertValue.put(5, 1.4);
+//            convertValue.put(6, 1.3);
+//            convertValue.put(7, 1.2);
+//            convertValue.put(8, 1.1);
+//            convertValue.put(9, 1.0);
+//            convertValue.put(10, 0.9);
+//            convertValue.put(11, 0.8);
+//            convertValue.put(12, 0.7);
+//            convertValue.put(13, 0.6);
+//            convertValue.put(14, 0.5);
+//            convertValue.put(15, 0.4);
+//            convertValue.put(16, 0.3);
+//            convertValue.put(17, 0.2);
+//            convertValue.put(18, 0.1);
+
+            double[] miltiplier = {1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1};
 
             switch(seekBar.getId()){
                 case R.id.seekBright:
@@ -675,7 +665,9 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 case R.id.seekSpeed:
                     int value = (Byte) seekSpeed.getTag();
 
-                    double speed = convertValue.get(progress) * value;
+                    double speed = miltiplier[progress] * value;
+
+                    //double speed = convertValue.get(progress) * value;
 
                     mCommander.setSpeed((byte) speed);
 

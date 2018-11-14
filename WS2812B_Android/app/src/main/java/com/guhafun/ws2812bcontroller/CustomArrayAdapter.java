@@ -22,15 +22,15 @@ import java.util.Arrays;
 class CustomArrayAdapter extends ArrayAdapter<String> {
     private String TAG = "ConLog";
     private final Context context;
-    private byte[] activeModes = null;
+    private byte[] activeModes;
     private String[] names;
     private int colorActive, colorDeactive;
     private byte currentMode;
     private Commander mCommander;
 
-    LayoutInflater mInflater;
+    private LayoutInflater mInflater;
 
-    public CustomArrayAdapter(Activity context, String[] names, byte[] activeModes, Commander commander) {
+    CustomArrayAdapter(Activity context, String[] names, byte[] activeModes, Commander commander) {
         super(context, R.layout.list_item_multiple_choice, names);
         this.context = context;
         this.names = names;
@@ -46,8 +46,11 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
         mInflater = context.getLayoutInflater();
 
         //Получаем цвет фона для активированного режима
-      colorActive = context.getResources().getColor(R.color.colorActiveMode);
-      colorDeactive = context.getResources().getColor(R.color.colorDeactiveMode);
+//      colorActive = context.getResources().getColor(R.color.colorActiveMode);
+//      colorDeactive = context.getResources().getColor(R.color.colorDeactiveMode);
+
+      colorActive = R.color.colorActiveMode;
+      colorDeactive = R.color.colorDeactiveMode;
 
     }
 
@@ -152,18 +155,18 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
     }
 
     //Метод для установки текущего режима
-    public void setCurrentMode(byte mode){
+    void setCurrentMode(byte mode){
         currentMode = mode;
         notifyDataSetChanged();
     }
 
     //Метод для обновления текущего состояния режима (включен или исключен из плейлиста)
-    public void setActiveModes(byte index, byte state){
+    void setActiveModes(byte index, byte state){
         activeModes[index] = state;
     }
 
     //Метод возвращает текущйи режим
-    public byte getCurrentMode() {
+    byte getCurrentMode() {
         return currentMode;
     }
 }
