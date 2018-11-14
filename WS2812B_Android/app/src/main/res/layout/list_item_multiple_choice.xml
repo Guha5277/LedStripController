@@ -10,16 +10,20 @@
     android:paddingEnd="?android:attr/listPreferredItemPaddingEnd">
 
     <TextView
-        android:id="@+id/modeName"
+        android:id="@+id/listModeName"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="37dp"
         android:layout_weight="1"
-        android:text="ghfghf"
+        android:clickable="true"
+        android:focusable="true"
+        android:paddingTop="7dp"
+        android:state_window_focused="false"
         android:textSize="16sp" />
 
     <CheckBox
-        android:id="@+id/checkBox"
+        android:id="@+id/listCheckbox"
         android:layout_width="201dp"
         android:layout_height="wrap_content"
-        android:layout_weight="5" />
+        android:layout_weight="5"
+        android:state_window_focused="false" />
 </LinearLayout>

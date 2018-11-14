@@ -84,10 +84,10 @@ public class InputThread extends Thread{
 
                         byte[] temp;
                         temp = new byte[count];
-                        String message = temp.toString();
+//                        String message = temp.toString();
                         inputStream.read(temp);
-
-                        Log.d(TAG, message);
+//
+//                        Log.d(TAG, message);
                     }
                 }
 

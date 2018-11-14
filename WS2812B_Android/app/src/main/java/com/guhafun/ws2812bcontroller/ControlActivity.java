@@ -126,21 +126,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         modeList = this.getResources().getStringArray(
                 R.array.mode_list);
 
-        //Добавление слушателя для элементов списка меню (чекбоксы - включение/исключение режима из плейлиста)
-        choiceModeList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                //Получаем элемент списка
-                CheckedTextView cbx = view.findViewById(android.R.id.text1);
-
-                //Проверяем состояние
-                byte state = (cbx.isChecked()) ? (byte) 1 : (byte) 0;
-
-                //Отправляем данные на МК
-                mCommander.actDeactMode( (byte)position, state);
-            }
-        });
-
         //Инициализируем Handler
         mHandler = new HandlerControl();
 
@@ -166,7 +151,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     private void updateUI(byte[] data){
 
                 //Инициализируем адаптер - в конструкторе, помимо контекста, указываем также список режимов и принятые данные
-                adapter = new CustomArrayAdapter(ControlActivity.this, modeList, data);
+                adapter = new CustomArrayAdapter(ControlActivity.this, modeList, data, mCommander);
                 choiceModeList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
                 choiceModeList.setAdapter(adapter);
                 adapter.notifyDataSetChanged();
@@ -179,17 +164,22 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
                 choiceModeList.setEnabled(true);
 
-                if(data[1] != 0) {
+                if(data[1] != 0 && data[1] != 99) {
                     txtCurMode.setText(modeList[data[1] - 1]);
-                } else {
+                } else if (data[1] == 0){
                     txtCurMode.setText("Лента отключена");
+                } else if (data[1] == 99) {
+                    txtCurModeNum.setText("Пауза");
                 }
 
-                    txtCurModeNum.setText(data[1] + "/49");
-
+                    if (data[1] < 99) {
+                        txtCurModeNum.setText(data[1] + "/49");
+                    } else {
+                        txtCurModeNum.setText("?/49");
+                    }
 
                 seekBright.setProgress(data[2] & 0xFF);
-                Log.d(TAG, "Bright from (byte): " + data[2] + ", to(int): " + (data[1] & 0xFF) );
+                Log.d(TAG, "Bright from (byte): " + data[2] + ", to(int): " + (data[2] & 0xFF) );
 
                 //Выключаем ползунок скорости, если у текущего режима отсутствует возможность ее регулировки
                 if (data[4] == 0){

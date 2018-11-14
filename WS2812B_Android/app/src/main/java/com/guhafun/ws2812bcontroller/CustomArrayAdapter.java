@@ -10,8 +10,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
 import android.widget.CheckedTextView;
+import android.widget.CompoundButton;
 import android.widget.ListView;
+import android.widget.TabHost;
+import android.widget.TextView;
 
 import com.example.ws2812bcontroller.R;
 
@@ -24,15 +28,17 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
     private final Context context;
     private byte[] activeModes = null;
     private String[] names;
-    private int colorActive;
+    private int colorActive, colorDeactive;
     private byte currentMode;
+    private Commander mCommander;
 
     LayoutInflater mInflater;
 
-    public CustomArrayAdapter(Activity context, String[] names, byte[] activeModes) {
-        super(context, android.R.layout.simple_list_item_multiple_choice, names);
+    public CustomArrayAdapter(Activity context, String[] names, byte[] activeModes, Commander commander) {
+        super(context, R.layout.list_item_multiple_choice, names);
         this.context = context;
         this.names = names;
+        mCommander = commander;
 
         //Получаем номер текущего режима
         currentMode = activeModes[1];
@@ -43,11 +49,13 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
 
         //Получаем цвет фона для активированного режима
       colorActive = context.getResources().getColor(R.color.colorActiveMode);
+      colorDeactive = context.getResources().getColor(R.color.colorDeactiveMode);
 
     }
 
     static class ViewHolder {
-        CheckedTextView mCheckedTextView;
+        TextView mText;
+        CheckBox mCheckBox;
     }
 
     @NonNull
@@ -56,36 +64,81 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
         ViewHolder holder;
 
         if (convertView == null){
-            convertView = mInflater.inflate(android.R.layout.simple_list_item_multiple_choice, null);
+            convertView = mInflater.inflate(R.layout.list_item_multiple_choice, null);
 
             holder = new ViewHolder();
-            holder.mCheckedTextView = convertView.findViewById(android.R.id.text1);
-
+            holder.mText = convertView.findViewById(R.id.listModeName);
+            holder.mCheckBox = convertView.findViewById(R.id.listCheckbox);
 
             convertView.setTag(holder);
+
+            holder.mText.setTag(position);
+            holder.mCheckBox.setTag(position);
+
+            holder.mText.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                   int position = (Integer)v.getTag();
+
+                   TextView txt = v.findViewById(R.id.listModeName);
+                   txt.setText("Клик на элементе списка: " + position);
+
+                }
+            });
+
+            holder.mCheckBox.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    int position = (Integer)v.getTag();
+                    CheckBox cbx = v.findViewById(R.id.listCheckbox);
+
+                    byte state = (cbx.isChecked()) ? (byte) 1 : 0;
+
+                    Log.d(TAG, "position: " + position + ", state: " + state);
+
+                    mCommander.actDeactMode((byte)position, state);
+
+                }
+            });
+
+
         }
         else {
             holder = (ViewHolder) convertView.getTag();
         }
 
-        holder.mCheckedTextView.setText(names[position]);
+        //Обновляем тег
+        holder.mText.setTag(position);
+        holder.mCheckBox.setTag(position);
+
+        holder.mText.setText(names[position]);
+
 
         if (currentMode - 1 == position){
-            holder.mCheckedTextView.setBackgroundColor(colorActive);
-            holder.mCheckedTextView.setTextColor(Color.WHITE);
+            convertView.setBackgroundColor(colorActive);
 
+            holder.mText.setTextColor(Color.WHITE);
+            holder.mCheckBox.setTextColor(Color.WHITE);
         }
         else {
-            holder.mCheckedTextView.setBackgroundColor(Color.WHITE);
-            holder.mCheckedTextView.setTextColor(Color.BLACK);
+//            convertView.setBackgroundColor(Color.WHITE);
+            convertView.setBackgroundColor(colorDeactive);
+
+            holder.mText.setTextColor(Color.BLACK);
+            holder.mCheckBox.setTextColor(Color.BLACK);
         }
 
-//        if (activeModes[position + 5] == 1) {
+
         if (activeModes[position] == 1) {
-            ((ListView) parent).setItemChecked(position, true);
+//            ((ListView) parent).setItemChecked(position, true);
+//             CheckBox v = parent.findViewById(R.id.listCheckbox);
+//             v.setChecked(true);
+            holder.mCheckBox.setChecked(true);
+
         }
         else {
-            ((ListView) parent).setItemChecked(position, false);
+//            ((ListView) parent).setItemChecked(position, false);
+            holder.mCheckBox.setChecked(false);
         }
         return convertView;
     }
@@ -105,4 +158,6 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
     public byte getCurrentMode() {
         return currentMode;
     }
+
+
 }
