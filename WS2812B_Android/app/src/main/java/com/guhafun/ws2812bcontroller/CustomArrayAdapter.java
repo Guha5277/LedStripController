@@ -81,7 +81,11 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
                    int position = (Integer)v.getTag();
 
                    TextView txt = v.findViewById(R.id.listModeName);
-                   txt.setText("Клик на элементе списка: " + position);
+
+                   if (currentMode != position) {
+                       mCommander.setModeTo((byte) position);
+                   }
+                  // txt.setText("Клик на элементе списка: " + position);
 
                 }
             });

@@ -235,6 +235,7 @@ void readCommand(byte a) {
     case 10: setBright(); break;//setBright
     case 11: set_Speed(); break;
     case 12: saveSettingsToMem(); break; //SaveModesToMem
+    case 13: setModeTo(); break;
   }
   sendResponce(a);
   clear_data();
@@ -255,6 +256,7 @@ void sendResponce (byte a) {
     case 10: Serial.write(max_bright); break;
     case 11: Serial.write(thisdelay); break;
     case 12: Serial.write(1); break;
+    case 13: Serial.write(ledMode); break;
 
   }
 }
@@ -405,6 +407,13 @@ void setBright() {
 void set_Speed() {
   if (haveSpeed) {
     thisdelay = command[1];
+  }
+}
+
+void setModeTo(){
+  if (command[1] > 0 && command[1] <= 49){
+    ledMode = command[1];
+    change_mode(ledMode);
   }
 }
 

@@ -23,6 +23,7 @@ public class Commander {
     private final byte SET_BRIGHT = 10;
     private final byte SET_SPEED = 11;
     private final byte SAVE_SETTINGS = 12;
+    private final byte SET_MODE_TO = 13;
 
 
     Commander(OutputStream outputStream){
@@ -87,5 +88,7 @@ public class Commander {
         sendMessage(SAVE_SETTINGS);
     }
 
-
+    public void setModeTo(byte mode) {
+        sendMessage(SET_MODE_TO, (byte) (mode + 1));
+    }
 }

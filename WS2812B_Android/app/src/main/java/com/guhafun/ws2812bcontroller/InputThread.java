@@ -28,6 +28,7 @@ public class InputThread extends Thread{
     private final byte SET_BRIGHT = 10;
     private final byte SET_SPEED = 11;
     private final byte SAVE_SETTINGS = 12;
+    private final byte SET_MODE_TO = 13;
 
 
 
@@ -97,12 +98,6 @@ public class InputThread extends Thread{
         }
     }
 
-//    public void setEnabled(boolean status){
-//        isNeedToListenData = status;
-//    }
-
-
-
     //Метод для отпраки данных в главный поток
     private void messageProcessing(byte [] inputData){
         //Здесь проверяется соответствие длины массива(кол-ва байт) которые может отправить МК при разных коммандах , в случае расхождений метод прерывается
@@ -120,6 +115,7 @@ public class InputThread extends Thread{
             //case SET_BRIGHT:
             case SET_SPEED:
             case SAVE_SETTINGS:
+            case SET_MODE_TO:
                 if (inputData.length != 2) {
                     return;
                 }

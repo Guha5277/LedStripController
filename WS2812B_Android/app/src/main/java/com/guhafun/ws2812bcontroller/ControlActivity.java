@@ -425,6 +425,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         private final byte SET_BRIGHT = 10;
         private final byte SET_SPEED = 11;
         private final byte SAVE_SETTINGS = 12;
+        private final byte SET_MODE_TO = 13;
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -519,6 +520,15 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                     else {
                         Toast.makeText(ControlActivity.this, "Ошибка сохранения настроек!", Toast.LENGTH_SHORT).show();
                     }
+                    break;
+
+                case SET_MODE_TO:
+                    //data[1] - новый текущий режим
+
+                    txtCurMode.setText(modeList[data[1]-1]);
+                    txtCurModeNum.setText(data[1] + "/49");
+
+                    adapter.setCurrentMode(data[1]);
             }
         }
     };
