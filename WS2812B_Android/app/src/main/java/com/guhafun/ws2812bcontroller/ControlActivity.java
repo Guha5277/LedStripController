@@ -102,12 +102,14 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         txtCurModeNum = findViewById(R.id.txtCurNumber);
         choiceModeList = findViewById(R.id.modeListView);
         seekBright = findViewById(R.id.seekBright);
-        seekBright.setOnSeekBarChangeListener(seekBarListener);
         seekSpeed = findViewById(R.id.seekSpeed);
-        seekSpeed.setOnSeekBarChangeListener(seekBarListener);
         btnPrev = findViewById(R.id.btnPrev);
         btnPause = findViewById(R.id.btnPause);
         btnNext = findViewById(R.id.btnNext);
+
+        //Добавление слушателей для ползунков управления яркостью и скоростью
+        seekBright.setOnSeekBarChangeListener(seekBarListener);
+        seekSpeed.setOnSeekBarChangeListener(seekBarListener);
 
         //Добавление слушателей для кнопок управления плейлистом
         btnPrev.setOnClickListener(this);
@@ -121,8 +123,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         mCommander = new Commander(mOutputStream);
 
         //Получаем список режимов из XML-файла
-        modeList = this.getResources().getStringArray(
-                R.array.mode_list);
+        modeList = this.getResources().getStringArray(R.array.mode_list);
 
         //Инициализируем Handler
         mHandler = new HandlerControl();
@@ -130,42 +131,40 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         //Регистрируем двух слушателей изменения состояния подключения
         registerReceiver(connectionStatusChanged, new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED));
         registerReceiver(connectionStatusChanged, new IntentFilter(BluetoothDevice.ACTION_ACL_CONNECTED));
+
         //Регистрируем локального слушателя для приема данных от InputThread'a
         LocalBroadcastManager.getInstance(this).registerReceiver(inputThreadListener, new IntentFilter(DATA_MESSAGE));
 
         //Инициализация и запуск фонового потока, отвечающего за прием данных
         mInputThread = new InputThread(mInputStream, this);
-        //mInputThread.setEnabled(true);
         mInputThread.start();
 
-//        initializeData();
         ThreadInitialize initializeThread = new ThreadInitialize();
         initializeThread.start();
 
         Log.d(TAG, "ControlActivity создано");
     }
 
-
-
     //Обновление интерфейса в соотвествтии с актуальными данными
     private void updateUI(byte[] data){
-
                 //Инициализируем адаптер - в конструкторе, помимо контекста, указываем также список режимов и принятые данные
                 adapter = new CustomArrayAdapter(ControlActivity.this, modeList, data, mCommander);
                 choiceModeList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
                 choiceModeList.setAdapter(adapter);
                 adapter.notifyDataSetChanged();
 
-                btnPrev.setEnabled(true);
-                btnPause.setEnabled(true);
-                btnNext.setEnabled(true);
+                //Активируем список, ползунки и кнопки
+                choiceModeList.setEnabled(true);
                 seekBright.setEnabled(true);
                 seekSpeed.setEnabled(true);
+                btnPrev.setEnabled(true);
+                btnNext.setEnabled(true);
+                btnPause.setEnabled(true);
 
-                choiceModeList.setEnabled(true);
-
+                //Обновляем заголовок плейлиста
                 setPlaylistTitle(data[1]);
 
+                //
                 seekBright.setProgress(data[2] & 0xFF);
 
                 Log.d(TAG, "Bright from (byte): " + data[2] + ", to(int): " + (data[2] & 0xFF) );
@@ -175,26 +174,19 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 if (data[4] == 0){
                     seekSpeed.setEnabled(false);
 
-                    seekSpeed.setOnSeekBarChangeListener(null);
+                   // seekSpeed.setOnSeekBarChangeListener(null);
                     seekSpeed.setProgress(0);
-                    seekSpeed.setOnSeekBarChangeListener(seekBarListener);
+                   // seekSpeed.setOnSeekBarChangeListener(seekBarListener);
                 }
                 else {
                     seekSpeed.setTag(0);
                     seekSpeed.setEnabled(true);
                     seekSpeed.setTag(data[4]);
 
-                    seekSpeed.setOnSeekBarChangeListener(null);
+                  //  seekSpeed.setOnSeekBarChangeListener(null);
                     seekSpeed.setProgress(9);
-                    seekSpeed.setOnSeekBarChangeListener(seekBarListener);
+                 //   seekSpeed.setOnSeekBarChangeListener(seekBarListener);
                 }
-
-//                if (data[3] == 1){
-//                    isAutoModeEnable = true;
-//                }
-//                else {
-//                    isAutoModeEnable = false;
-//                }
 
                 isAutoModeEnable = (data[3] == 1);
 
@@ -216,7 +208,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
             default:
                 txtCurMode.setText(modeList[mode - 1]);
-                txtCurModeNum.setText(mode + R.string.modesTotal);
+                txtCurModeNum.setText(mode + "/49");
                 break;
         }
     }
@@ -320,9 +312,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
             menuAutoOnOff.setChecked(false);
             menuAutoOnOff.setOnCheckedChangeListener(mOnCheckedAutoChangeListener());
         }
-
-
-
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -491,16 +480,16 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                     if(data[2] > 0){
                         seekSpeed.setEnabled(true);
                         seekSpeed.setTag(data[2]);
-                        seekSpeed.setOnSeekBarChangeListener(null);
+                     //   seekSpeed.setOnSeekBarChangeListener(null);
                         seekSpeed.setProgress(9);
-                        seekSpeed.setOnSeekBarChangeListener(seekBarListener);
+                     //   seekSpeed.setOnSeekBarChangeListener(seekBarListener);
                     }
                     else {
                         seekSpeed.setTag(0);
                         seekSpeed.setEnabled(false);
-                        seekSpeed.setOnSeekBarChangeListener(null);
+                     //   seekSpeed.setOnSeekBarChangeListener(null);
                         seekSpeed.setProgress(0);
-                        seekSpeed.setOnSeekBarChangeListener(seekBarListener);
+                     //  seekSpeed.setOnSeekBarChangeListener(seekBarListener);
                     }
                     break;
 

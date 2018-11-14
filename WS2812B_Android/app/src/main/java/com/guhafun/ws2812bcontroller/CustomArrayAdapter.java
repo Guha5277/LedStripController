@@ -46,11 +46,11 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
         mInflater = context.getLayoutInflater();
 
         //Получаем цвет фона для активированного режима
-//      colorActive = context.getResources().getColor(R.color.colorActiveMode);
-//      colorDeactive = context.getResources().getColor(R.color.colorDeactiveMode);
+      colorActive = context.getResources().getColor(R.color.colorActiveMode);
+      colorDeactive = context.getResources().getColor(R.color.colorDeactiveMode);
 
-      colorActive = R.color.colorActiveMode;
-      colorDeactive = R.color.colorDeactiveMode;
+//      colorActive = R.color.colorActiveMode;
+//      colorDeactive = R.color.colorDeactiveMode;
 
     }
 
