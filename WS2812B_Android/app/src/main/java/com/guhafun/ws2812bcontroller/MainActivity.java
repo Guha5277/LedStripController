@@ -136,7 +136,7 @@ public class MainActivity extends AppCompatActivity {
                         if (mProgressDialog != null && mProgressDialog.isShowing()) {
                             mProgressDialog.dismiss();
                             Toast.makeText(MainActivity.this, "Не удалось установить соединение!", Toast.LENGTH_SHORT).show();
-                            Log.d(TAG, "MainActivity: Не удалось установить соединение! Проверьте доступность Bluetooth-устройства");
+                          //  Log.d(TAG, "MainActivity: Не удалось установить соединение! Проверьте доступность Bluetooth-устройства");
                         }
                         break;
                     case 1:
@@ -156,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
         pairedListView.setOnItemClickListener(itemClickListener);
         discoveredListView.setOnItemClickListener(itemClickListener);
 
-        Log.d(TAG, "MainActivity создано");
+       // Log.d(TAG, "MainActivity создано");
     }
 
     //Реализация обработки нажатий на элементы списка
@@ -168,14 +168,14 @@ public class MainActivity extends AppCompatActivity {
             String adapterMac = itemHashMap.get(ADAPTER_MAC);
 
             if (BluetoothAdapter.checkBluetoothAddress(adapterMac)) {
-                Log.d(TAG, "MainActivity: MAC-адресс: " + adapterMac + " имеет валидный формат!");
+              //  Log.d(TAG, "MainActivity: MAC-адресс: " + adapterMac + " имеет валидный формат!");
                 BluetoothDevice device = bluetoothLocal.getRemoteDevice(adapterMac);
-                Log.d(TAG, "MainActivity: Bluetooth устройство: " + device.getName() + ", MAC: " + device.getAddress() + " успешно инициализировано!");
+              //  Log.d(TAG, "MainActivity: Bluetooth устройство: " + device.getName() + ", MAC: " + device.getAddress() + " успешно инициализировано!");
                 bluetoothLocal.cancelDiscovery();
 
                 //Проверяем, включен ли блютуз перед подключением
                 if (bluetoothLocal.isEnabled()) {
-                    Log.d(TAG, "MainActivity: подключение к " + device.getName() + ", " + device.getAddress() + "...");
+               //     Log.d(TAG, "MainActivity: подключение к " + device.getName() + ", " + device.getAddress() + "...");
 
                     //Создаем диалог информирующий пользователя о инициации подключения
                     mProgressDialog = new ProgressDialog(MainActivity.this);
@@ -187,16 +187,16 @@ public class MainActivity extends AppCompatActivity {
                     tryToConnect = new ConnectThread(device, handler);
                     tryToConnect.start();
                 } else {
-                    Log.d(TAG, "MainActivity: ошибка подключения к " + device.getName() + "! Bluetooth Adapter отключен!");
+                //    Log.d(TAG, "MainActivity: ошибка подключения к " + device.getName() + "! Bluetooth Adapter отключен!");
                     Toast.makeText(MainActivity.this, "Для подключения к устройству включите Bluetooth!", Toast.LENGTH_SHORT).show();
                 }
             } else {
-                Log.d(TAG, "MainActivity: MAC-адрес: " + adapterMac + "имеет неверный формат!");
+              //  Log.d(TAG, "MainActivity: MAC-адрес: " + adapterMac + "имеет неверный формат!");
             }
 
-            Toast.makeText(getApplicationContext(),
-                    "Device " + adapterName + ". Mac " + adapterMac, Toast.LENGTH_SHORT)
-                    .show();
+//            Toast.makeText(getApplicationContext(),
+//                    "Device " + adapterName + ". Mac " + adapterMac, Toast.LENGTH_SHORT)
+//                    .show();
         }
     };
 
@@ -405,8 +405,8 @@ public class MainActivity extends AppCompatActivity {
         unregisterReceiver(btStateChangeBR);
         unregisterReceiver(discoveryBR);
 
-        Log.d(TAG, "MainActivity BoadcastReceiver деактивирован");
-        Log.d(TAG, "MainActivity остановлено");
+//        Log.d(TAG, "MainActivity BoadcastReceiver деактивирован");
+//        Log.d(TAG, "MainActivity остановлено");
 
     }
 
@@ -423,7 +423,7 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver(discoveryBR, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED));
 
 
-        Log.d(TAG, "MainActivity возобновлено");
+//        Log.d(TAG, "MainActivity возобновлено");
     }
 
     @Override
@@ -433,7 +433,7 @@ public class MainActivity extends AppCompatActivity {
 //        unregisterReceiver(btStateChangeBR);
 //        unregisterReceiver(discoveryBR);
 
-        Log.d(TAG, "MainActivity уничтожено");
+//        Log.d(TAG, "MainActivity уничтожено");
     }
 
 

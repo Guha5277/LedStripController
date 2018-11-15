@@ -141,7 +141,7 @@ public class InputThread extends Thread{
         intent.putExtra("msg", inputData[0]);
         intent.putExtra("data", inputData);
 
-        Log.d(TAG, "InputThread отправлена команда: " + inputData[0] + ", с содержимым: " + Arrays.toString(inputData));
+        Log.d(TAG, "InputThread отправлено в главный поток: " + inputData[0] + ", с содержимым: " + Arrays.toString(inputData));
 
         LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
     }
