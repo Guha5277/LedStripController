@@ -305,7 +305,7 @@ void onOff() {
 
 /*****Предыдущий режим *****/
 void prevMode() {      // Включить предыдущий режим
-  if (ledMode < 2) {
+  if (ledMode < 2 || ledMode == 99) {
     ledMode = 49;
   }
   else {

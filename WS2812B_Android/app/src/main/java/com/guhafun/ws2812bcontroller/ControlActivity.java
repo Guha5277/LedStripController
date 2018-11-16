@@ -6,8 +6,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -27,7 +29,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
-public class ControlActivity extends AppCompatActivity implements View.OnClickListener {
+public class ControlActivity extends AppCompatActivity implements View.OnClickListener, SharedPreferences.OnSharedPreferenceChangeListener {
 
     //Строковый массив данных, содержащий названия режимов ленты.
 //    private String[] modeNames = {"Rainbow Fade", "Rainbow Loop", "Random Burst", "Color Bounce", "Color Bounce Fade", "EMS Light One",
@@ -71,9 +73,9 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     //Элементы меню
     Menu controlMenu;
     Switch menuBtnOnOff;
-    ImageButton menuBtnFav;
-    ImageButton menuBtnSave;
+    ImageButton menuBtnFav, menuBtnSave, menuBtnPref;
     Switch menuAutoOnOff;
+
 
     TextView txtCurMode;
     TextView txtCurModeNum;
@@ -105,6 +107,11 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_contlor);
 
+        //Регистрируем слушателя изменения настроек приложения
+        Context context = getApplicationContext();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        prefs.registerOnSharedPreferenceChangeListener(this);
+
         //Инициализация объектов графического интерфейса
         txtCurMode = findViewById(R.id.txtCurMode);
         txtCurModeNum = findViewById(R.id.txtCurNumber);
@@ -114,10 +121,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         btnPrev = findViewById(R.id.btnPrev);
         btnPause = findViewById(R.id.btnPause);
         btnNext = findViewById(R.id.btnNext);
-
-        //Добавление слушателей для ползунков управления яркостью и скоростью
-
-
 
         //Добавление слушателей для кнопок управления плейлистом
         btnPrev.setOnClickListener(this);
@@ -152,6 +155,8 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
 //        Log.d(TAG, "ControlActivity создано");
     }
+
+
 
     //Обновление интерфейса в соотвествтии с актуальными данными
     private void updateUI(byte[] data){
@@ -269,10 +274,18 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         menuBtnFav = menu.findItem(R.id.button_fav).getActionView().findViewById(R.id.favButton);
         menuBtnSave = menu.findItem(R.id.button_save).getActionView().findViewById(R.id.saveButton);
         menuAutoOnOff = menu.findItem(R.id.automode).getActionView().findViewById(R.id.switchButton);
-
+        menuBtnPref = menu.findItem(R.id.preference).getActionView().findViewById(R.id.settings);
 
         menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
         menuAutoOnOff.setOnCheckedChangeListener(mOnCheckedAutoChangeListener());
+
+        menuBtnPref.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(ControlActivity.this, AppPreference.class);
+                startActivity(intent);
+            }
+        });
 
         menuBtnFav.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -684,5 +697,10 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         }
 
 //        if (!mInputThread.isAlive()) Log.d(TAG, "InputThread был остановлен методом interrupt()");
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        Log.d(TAG, key);
     }
 }

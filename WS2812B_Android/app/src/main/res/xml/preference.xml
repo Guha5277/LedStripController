@@ -1,0 +1,52 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- NOTE: EditTextPreference accepts EditText attributes. -->
+    <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
+
+    <!-- NOTE: Hide buttons to simplify the UI. Users can touch outside the dialog to
+         dismiss it. -->
+    <!-- NOTE: ListPreference's summary should be set to its value by the activity code. -->
+    <PreferenceCategory
+        android:title="@string/pref_auto">
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="auto_state"
+        android:summary="@string/pref_auto_state_summary"
+        android:title="@string/pref_auto_state" />
+        <ListPreference
+            android:defaultValue="1"
+            android:entries="@array/pref_auto_duration_value"
+            android:entryValues="@array/pref_auto_duration_value"
+            android:key="auto_duration"
+            android:summary="@string/pref_auto_duration_summary"
+            android:title="@string/pref_auto_duration"
+            android:dependency="auto_state" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/pref_play">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="random_state"
+            android:title="@string/pref_play_random"
+            android:summary="@string/pref_play_random_summary"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_save">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="autosave_state"
+            android:title="@string/pref_save_autosave"
+            android:summary="@string/pref_save_autosave_summary"
+            />
+        <ListPreference
+            android:defaultValue="1"
+            android:entries="@array/pref_autosave_duration_value"
+            android:entryValues="@array/pref_autosave_duration_value"
+            android:key="autosave_duration"
+            android:summary="@string/pref_autosave_duration_summary"
+            android:title="@string/pref_autosave_duration"
+            android:dependency="autosave_state"/>
+    </PreferenceCategory>
+
+</PreferenceScreen>

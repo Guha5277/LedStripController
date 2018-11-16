@@ -10,4 +10,18 @@
     <string name="btnPause">Кнопка пауза</string>
     <string name="bright">Яркость</string>
     <string name="speed">Скорость</string>
+    <string name="title_activity_settings">Настройки</string>
+    <string name="pref_auto">Настройки Авторежима</string>
+    <string name="pref_play">Настройки воспроизведения</string>
+    <string name="pref_auto_duration">"Продолжительность   "</string>
+    <string name="pref_auto_state">Авторежим</string>
+    <string name="pref_play_random">Случайное переключение</string>
+    <string name="pref_save">Настройки автосохранения</string>
+    <string name="pref_save_autosave">Автосохранение</string>
+    <string name="pref_autosave_duration">"Периодичность    "</string>
+    <string name="pref_auto_state_summary">Включить автоматическое переключение эффектов через заданный интервал времени</string>
+    <string name="pref_auto_duration_summary">Установить период (в секундах) между автоматическим переключением</string>
+    <string name="pref_play_random_summary">Включить случайное переключение режимов (работает как при ручном переключении, так и в авторежиме)</string>
+    <string name="pref_save_autosave_summary">Включить автосохранение изменений</string>
+    <string name="pref_autosave_duration_summary">Установить периодичность(в секундах) автоматического сохранения изменений</string>
 </resources>

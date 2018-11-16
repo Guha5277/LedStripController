@@ -29,4 +29,10 @@
         app:showAsAction="always">
 
     </item>
+    <item
+        android:id="@+id/preference"
+        android:enabled="true"
+        android:title="Save"
+        app:actionLayout="@layout/settings"
+        app:showAsAction="always" />
 </menu>

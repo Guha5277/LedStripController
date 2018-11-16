@@ -19,8 +19,8 @@
                                   <option name="values">
                                     <map>
                                       <entry key="assetType" value="IMAGE" />
-                                      <entry key="imageAsset" value="C:\Workout\WS2812B\WS2812B_Controller\src\icons\fav.png" />
-                                      <entry key="outputName" value="fav" />
+                                      <entry key="imageAsset" value="C:\Users\Алексей\Downloads\settings_icon.png" />
+                                      <entry key="outputName" value="settings" />
                                     </map>
                                   </option>
                                 </PersistentState>
