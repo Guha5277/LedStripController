@@ -693,7 +693,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         if (mInputThread.isAlive()) {
             mInputThread.interrupt();
         } else {
-//            Log.d(TAG, "InputThread УЖЕ был остановлен!");
+            Log.d(TAG, "InputThread УЖЕ был остановлен!");
         }
 
 //        if (!mInputThread.isAlive()) Log.d(TAG, "InputThread был остановлен методом interrupt()");
@@ -701,6 +701,27 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        Log.d(TAG, key);
+        if (key.equals("auto_state")){
+          boolean result =  sharedPreferences.getBoolean(key, false);
+            Log.d(TAG, "Авторежим установлен в: " + result);
+        }
+        else if (key.equals("auto_duration")){
+           int result = Integer.parseInt(sharedPreferences.getString(key, "0"));
+            Log.d(TAG, "Длительность авторежима установлеа в: " + result);
+        }
+        else if (key.equals("random_state")){
+           boolean result = sharedPreferences.getBoolean(key, false);
+            Log.d(TAG, "Случайное переключение: " + result);
+        }
+        else if (key.equals("autosave_state")){
+            boolean result = sharedPreferences.getBoolean(key, false);
+            Log.d(TAG, "Автосохранение: " + result);
+        }
+        else if (key.equals("autosave_duration")){
+            int result = Integer.parseInt(sharedPreferences.getString(key, "0"));
+            Log.d(TAG, "Интервал автосохранения: " + result);
+        }
+
+      //  Log.d(TAG, key);
     }
 }
