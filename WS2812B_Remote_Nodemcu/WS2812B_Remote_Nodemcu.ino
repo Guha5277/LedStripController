@@ -26,6 +26,7 @@ boolean isAutoSaveEnabled = false;
 boolean isNeedToSaveData = false;
 
 boolean auto_mode = 0;
+boolean temp_auto_mode = 0;
 byte auto_mode_duration = 10;
 byte auto_save_duration = 5;
 
@@ -360,11 +361,14 @@ void sendCurrentMode() {
 }
 
 /*****Включение и выключение ленты*****/
-void onOff() {
+void onOff() {  
   if (ledMode > 0) {
+    temp_auto_mode = auto_mode;
+    auto_mode = false;
+    
     ledModel = ledMode;
     change_mode(0);
-    isStripOn = 0;
+    isStripOn = 0;  
   }
   else {
     if (ledModel == 50) {
@@ -372,6 +376,7 @@ void onOff() {
       LEDS.show();
     }
     else {
+      auto_mode = temp_auto_mode;
       change_mode(ledModel);
     }
     isStripOn = 1;
@@ -381,6 +386,10 @@ void onOff() {
 
 /*****Предыдущий режим *****/
 void prevMode() {      // Включить предыдущий режим
+  if (isRandomEnabled) {
+  changeModeRandom();
+}
+else {
   if (ledMode < 2 || ledMode == 99) {
     ledMode = 49;
   }
@@ -395,7 +404,7 @@ void prevMode() {      // Включить предыдущий режим
   }
 
   change_mode(ledMode);
-  // sendCurrentMode();
+ }
 }
 
 /*****Пауза *****/
@@ -414,13 +423,18 @@ void pausePlay() {
 /*****Следующий режим *****/
 void nextMode() {
 
+if (isRandomEnabled) {
+  changeModeRandom();
+}
+else{
   ledMode = (ledMode % 49) + 1;
   while (!ledModes[ledMode - 1]) {
     ledMode = (ledMode % 49) + 1;
   }
 
   change_mode(ledMode);
-  //  sendCurrentMode();
+  
+}
 }
 
 /*****Стартовый режим *****/
