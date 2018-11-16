@@ -19,8 +19,17 @@ byte startMode = 0;
 boolean haveSpeed = false;
 byte ledModes[49] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 int max_bright = 5;
-boolean auto_mode = 0;
 int thisdelay = 0;
+
+boolean isRandomEnabled = false;
+boolean isAutoSaveEnabled = false;
+boolean isNeedToSaveData = false;
+
+boolean auto_mode = 0;
+byte auto_mode_duration = 10;
+byte auto_save_duration = 5;
+
+long last_change_autosave = 0;
 
 byte r, g, b = 0;
 
@@ -66,6 +75,7 @@ int lcount = 0;              //-ANOTHER COUNTING VAR
 
 void setup() {
   Serial.begin(115200);
+  
   loadSettings();
 
   LEDS.setBrightness(max_bright);  // ограничить максимальную яркость
@@ -90,25 +100,68 @@ void setup() {
 //    EEPROM.commit(); 
 //    EEPROM.end();
 
+//  EEPROM.begin(64);
+//  
+//  EEPROM.write(52, 10);
+//  EEPROM.write(53, 0);
+//  EEPROM.write(54, 0);
+//  EEPROM.write(55, 5);
+//
+//  EEPROM.commit(); 
+//  EEPROM.end();
+  
 }
 
+//Основной цикл программы
 void loop() {
+  //Проверяем наличие входящих данных
   serialEventRead();
-  
+
+  //Если пришел мусор - очищаем
   if (command[0]) {
     readCommand(command[0]);
   }
 
+
+//Если включен авторежим
   if (auto_mode) {
-    if (millis() - last_change > change_time) {
-      //change_time = (20000);
-      nextMode();
+    //Проверяем, истекло ли время таймера
+    if (millis() - last_change > auto_mode_duration * 1000) {
+      
+      //Если включен режим случайной смены эффектов
+      if (isRandomEnabled) {
+        changeModeRandom();
+      }
+      
+      //Иначе - просто включаем следующий режим
+      else {
+        nextMode();
+      }
+      
       last_change = millis();
       sendResponce(4);
     }
   }
 
-//  if (millis() - last_change2 > change_time2){
+ //Если включен режим автосохранения и есть необходимость сохранить настройки
+  if (isAutoSaveEnabled && isNeedToSaveData){
+
+    //Если таймер автосохранения истек
+     if (millis() - last_change_autosave > auto_save_duration * 1000){
+      //Сбрасываем флаг необходимости сохранения настрок
+      isNeedToSaveData = false;
+      
+      //Сохраняем настройки
+      saveSettingsToMem();
+      
+      //Отправляем уведомление клиенту
+      sendResponce(12);
+
+      last_change_autosave = millis();
+     }
+    }
+  
+  //  if (millis() - last_change2 > change_time2){
 //    last_change2 = millis();
 //    Serial.write(100);
 //  }
@@ -182,11 +235,17 @@ void loadSettings() {
   max_bright = EEPROM.read(0);
   ledMode = EEPROM.read(1);
   auto_mode = EEPROM.read(2);
+  
   int index = 0;
   for (int z = 3; z < 52; z++) {
     ledModes[index] = EEPROM.read(z);
     index++;
   }
+
+  auto_mode_duration = EEPROM.read(52);
+  isRandomEnabled = EEPROM.read(53);
+  isAutoSaveEnabled = EEPROM.read(54);
+  auto_save_duration = EEPROM.read(55);
 
     EEPROM.end();
 }
@@ -206,6 +265,12 @@ void saveSettingsToMem () {
     EEPROM.write(b, ledModes[i]);
     b++;
   }
+    
+  EEPROM.write(52, auto_mode_duration);
+  EEPROM.write(53, isRandomEnabled);
+  EEPROM.write(54, isAutoSaveEnabled);
+  EEPROM.write(55, auto_save_duration);
+  
       EEPROM.commit();
       EEPROM.end();
   
@@ -229,13 +294,17 @@ void readCommand(byte a) {
     case 4: nextMode(); break; // Пауза - воспроизведение
     case 5: pausePlay(); break; //Следующий режим
     case 6: favMode(); break;//Режим по умолчанию (при включении ленты)
-    case 7: actDeactMode();  break; //ВКЛ - ВЫКЛ режимов из плейлиста
-    case 8: autoMode(); break; //ВКЛ - ВЫКЛ авторежима
+    case 7: actDeactMode(); isNeedToSaveData = true; break; //ВКЛ - ВЫКЛ режимов из плейлиста
+    case 8: autoMode(); isNeedToSaveData = true; break; //ВКЛ - ВЫКЛ авторежима
     case 9: setColor(); break; //
-    case 10: setBright(); break;//setBright
+    case 10: setBright(); isNeedToSaveData = true; break;//setBright
     case 11: set_Speed(); break;
     case 12: saveSettingsToMem(); break; //SaveModesToMem
     case 13: setModeTo(); break;
+    case 14: autoSave(); isNeedToSaveData = true; break;
+    case 15: autoSaveDuration(); isNeedToSaveData = true; break;
+    case 16: autoModeDuration(); isNeedToSaveData = true; break;
+    case 17: setRandom(); isNeedToSaveData = true; break;
   }
   sendResponce(a);
   clear_data();
@@ -258,6 +327,9 @@ void sendResponce (byte a) {
     case 11: Serial.write(thisdelay); break;
     case 12: Serial.write(1); break;
    // case 13: Serial.write(ledMode); break;
+   case 14: Serial.write(isAutoSaveEnabled); break;
+   case 15: Serial.write(auto_save_duration); break;
+   case 16: Serial.write(auto_mode_duration); break;
 
   }
 }
@@ -269,6 +341,10 @@ void sendSettings() {
   Serial.write(auto_mode);
   Serial.write(thisdelay);
   Serial.write(ledModes, 49);
+  Serial.write(auto_mode_duration);
+  Serial.write(isRandomEnabled);
+  Serial.write(isAutoSaveEnabled);
+  Serial.write(auto_save_duration);
 }
 
 
@@ -418,6 +494,31 @@ void setModeTo(){
   }
 }
 
+void changeModeRandom () {
+   ledModel = ledMode;
+   ledMode = random(1, 50);
+  
+  while (!ledModes[ledMode - 1] || ledMode == ledModel) {
+    ledMode = random(1, 50);
+  }
+  change_mode(ledMode);
+}
+
+void autoSave() {
+  isAutoSaveEnabled = command[1];
+}
+
+void autoSaveDuration() {
+  auto_save_duration = command[1];
+}
+
+void autoModeDuration() {
+  auto_mode_duration = command[1];
+}
+
+void setRandom () {
+  isRandomEnabled = command[1];
+}
 
 void change_mode(int newmode) {
   thissat = 255;
