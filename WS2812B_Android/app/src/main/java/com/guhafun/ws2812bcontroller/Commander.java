@@ -23,6 +23,11 @@ public class Commander {
     private final byte SET_SPEED = 11;
     private final byte SAVE_SETTINGS = 12;
     private final byte SET_MODE_TO = 13;
+    private final byte SET_AUTO_SAVE = 14;
+    private final byte AUTO_SAVE_DURATION = 15;
+    private final byte AUTO_MODE_DURATION = 16;
+    private final byte SET_RANDOM = 17;
+
 
 
     Commander(OutputStream outputStream){
@@ -92,5 +97,20 @@ public class Commander {
 
     public void setModeTo(byte mode) {
         sendMessage(SET_MODE_TO, (byte) (mode + 1));
+    }
+
+    public void setAutoSave(boolean state) {
+        byte result = (state) ? (byte) 1 : 0;
+        sendMessage(SET_AUTO_SAVE, result);
+    }
+    public void setAutoSaveDuration(byte duration) {
+        sendMessage(AUTO_SAVE_DURATION, duration);
+    }
+    public void setAutoModeDuration(byte duration) {
+        sendMessage(AUTO_MODE_DURATION, duration);
+    }
+    public void setRandom(boolean state) {
+        byte result = (state) ? (byte) 1 : 0;
+        sendMessage(SET_RANDOM, result);
     }
 }

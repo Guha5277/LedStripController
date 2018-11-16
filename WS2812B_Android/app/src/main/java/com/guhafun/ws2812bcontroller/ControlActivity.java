@@ -467,7 +467,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
             switch (returnedCommand){
 
                 case INIT:
-                    if (data.length == 54) {
+                    if (data.length == 58) {
                         isInitialDataRecieved = true;
                         isStripEnable = true;
                         updateUI(data);
@@ -592,6 +592,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         super.onDestroy();
         //Останавливаем поток входящих данных и закрываем сокет
         stopInputThread();
+        closeSocket();
 
         //Снятие слушателей при уничтожении Активити
         unregisterReceiver(connectionStatusChanged);
@@ -701,25 +702,42 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (key.equals("auto_state")){
-          boolean result =  sharedPreferences.getBoolean(key, false);
-            Log.d(TAG, "Авторежим установлен в: " + result);
-        }
-        else if (key.equals("auto_duration")){
-           int result = Integer.parseInt(sharedPreferences.getString(key, "0"));
-            Log.d(TAG, "Длительность авторежима установлеа в: " + result);
-        }
-        else if (key.equals("random_state")){
-           boolean result = sharedPreferences.getBoolean(key, false);
-            Log.d(TAG, "Случайное переключение: " + result);
-        }
-        else if (key.equals("autosave_state")){
-            boolean result = sharedPreferences.getBoolean(key, false);
-            Log.d(TAG, "Автосохранение: " + result);
-        }
-        else if (key.equals("autosave_duration")){
-            int result = Integer.parseInt(sharedPreferences.getString(key, "0"));
-            Log.d(TAG, "Интервал автосохранения: " + result);
+        switch (key) {
+            case "auto_state": {
+                boolean result = sharedPreferences.getBoolean(key, false);
+                mCommander.setAutoMode(result);
+
+                Log.d(TAG, "Авторежим установлен в: " + result);
+                break;
+            }
+            case "auto_duration": {
+                int result = Integer.parseInt(sharedPreferences.getString(key, "0"));
+                mCommander.setAutoModeDuration((byte) result);
+
+                Log.d(TAG, "Длительность авторежима установлеа в: " + result);
+                break;
+            }
+            case "random_state": {
+                boolean result = sharedPreferences.getBoolean(key, false);
+                mCommander.setRandom(result);
+
+                Log.d(TAG, "Случайное переключение: " + result);
+                break;
+            }
+            case "autosave_state": {
+                boolean result = sharedPreferences.getBoolean(key, false);
+                mCommander.setAutoSave(result);
+
+                Log.d(TAG, "Автосохранение: " + result);
+                break;
+            }
+            case "autosave_duration": {
+                int result = Integer.parseInt(sharedPreferences.getString(key, "0"));
+                mCommander.setAutoSaveDuration((byte)result);
+
+                Log.d(TAG, "Интервал автосохранения: " + result);
+                break;
+            }
         }
 
       //  Log.d(TAG, key);

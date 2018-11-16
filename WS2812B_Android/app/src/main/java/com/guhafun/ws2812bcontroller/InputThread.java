@@ -14,6 +14,8 @@ public class InputThread extends Thread{
     private InputStream inputStream;
     private Context mContext;
 
+    private final byte INITIAL_DATA_LENGHT = 58;
+
     InputThread(InputStream inStream, Context context){
         Log.d(TAG, "InputThread инициализирован");
         inputStream = inStream;
@@ -53,7 +55,7 @@ public class InputThread extends Thread{
                     }
 
                     //Если пришло 54 байта - это данные инициализации, которые приходят при подключении
-                    if (count == 54) {
+                    if (count == INITIAL_DATA_LENGHT) {
                         Log.d(TAG, "InputThread: Доступно байт: " + count);
 
                         //Считываем и отправляем полученные данные
@@ -65,7 +67,7 @@ public class InputThread extends Thread{
                     }
 
                     //Если пришла какая-то неведомая фигня, то просто очищаем буфер
-                    if (count > 54){
+                    if (count > INITIAL_DATA_LENGHT){
 
                         byte[] temp;
                         temp = new byte[count];
@@ -99,7 +101,7 @@ public class InputThread extends Thread{
         //Здесь проверяется соответствие длины принятого массива(кол-ва байт) которые может отправить МК при разных коммандах, в случае расхождений метод прерывается...
         switch(inputData[0]){
             case INITIALIZE:
-                if (inputData.length != 54) {
+                if (inputData.length != INITIAL_DATA_LENGHT) {
                     return;
                 }
                 break;
