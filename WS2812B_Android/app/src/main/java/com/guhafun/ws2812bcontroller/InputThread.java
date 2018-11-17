@@ -14,6 +14,7 @@ public class InputThread extends Thread{
     private InputStream inputStream;
     private Context mContext;
 
+    //Константа со значением данных для иницализации
     private final byte INITIAL_DATA_LENGHT = 58;
 
     InputThread(InputStream inStream, Context context){
@@ -51,10 +52,10 @@ public class InputThread extends Thread{
                         readCount = inputStream.read(data);
                         messageProcessing(data);
 
-                        Log.d(TAG, "InputThread: Принято байт (<54): " + readCount + ", Содердимое: " + Arrays.toString(data));
+                        Log.d(TAG, "InputThread: Принято байт: " + readCount + ", Содердимое: " + Arrays.toString(data));
                     }
 
-                    //Если пришло 54 байта - это данные инициализации, которые приходят при подключении
+                    //Если пришло 58 байт - это данные инициализации, которые приходят при подключении
                     if (count == INITIAL_DATA_LENGHT) {
                         Log.d(TAG, "InputThread: Доступно байт: " + count);
 
@@ -63,7 +64,7 @@ public class InputThread extends Thread{
                         readCount = inputStream.read(data);
                         messageProcessing(data);
 
-                        Log.d(TAG, "InputThread: Принято байт (=54): " + readCount + ", Содердимое: " + Arrays.toString(data));
+                        Log.d(TAG, "InputThread: Принято байт (=58): " + readCount + ", Содердимое: " + Arrays.toString(data));
                     }
 
                     //Если пришла какая-то неведомая фигня, то просто очищаем буфер

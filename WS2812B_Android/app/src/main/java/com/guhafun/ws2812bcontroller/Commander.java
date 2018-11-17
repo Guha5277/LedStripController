@@ -11,6 +11,7 @@ public class Commander {
 
     private String TAG = "ConLog";
 
+    private final byte GET_INITIAL_DATA = 1;
     private final byte ON_OFF = 2;
     private final byte PREV_MODE = 3;
     private final byte NEXT_MODE = 4;
@@ -28,8 +29,6 @@ public class Commander {
     private final byte AUTO_MODE_DURATION = 16;
     private final byte SET_RANDOM = 17;
 
-
-
     Commander(OutputStream outputStream){
         this.mOutputStream = outputStream;
     }
@@ -44,34 +43,45 @@ public class Commander {
         Log.d(TAG, "Output: Данные отправлены");
     }
 
-    public void onOff(){
+    void getInitialData(){
+        sendMessage(GET_INITIAL_DATA);
+    }
+
+    //Включение/выключение ленты
+    void onOff(){
         sendMessage(ON_OFF);
     }
 
-    public void prevMode(){
+    //Назад
+    void prevMode(){
         sendMessage(PREV_MODE);
     }
 
-    public void nextMode(){
+    //Вперед
+    void nextMode(){
         sendMessage(NEXT_MODE);
     }
 
-    public void pausePlay(){
+    //Пауза/воспроизведение
+    void pausePlay(){
         sendMessage(PAUSE_PLAY);
     }
 
-    public void addToFav(byte modeIndex){
+    //Установить эффект в качестве стартового
+    void addToFav(byte modeIndex){
         sendMessage(FAV_MODE, modeIndex);
     }
 
-    public void actDeactMode(byte mode, boolean state){
+    //Добавить/исключить режим из плейлиста
+    void actDeactMode(byte mode, boolean state){
         //Формируем сообщение для отпраки 1 - включить в список, 0 - исключить из списка, в зависимоти от полученного результата
         byte result = (state) ? (byte) 1 : 0;
 
         sendMessage(ACT_DEACT_MODE, mode, result);
     }
 
-    public void setAutoMode(boolean state){
+    //Включить/выключить авторежим
+    void setAutoMode(boolean state){
         //byte onOffValue;
 
         byte onOffValue = (state) ? (byte) 1 : 0;
@@ -79,37 +89,49 @@ public class Commander {
         sendMessage(AUTO_MODE, onOffValue);
     }
 
-    public void setColor(byte r, byte g,  byte b){
+    //Установить произвольный цвет
+    void setColor(byte r, byte g,  byte b){
         sendMessage(SET_COLOR, r, g, b);
     }
 
+    //Задать яркость
     public void setBright (byte bright) {
         sendMessage(SET_BRIGHT, bright);
     }
 
+    //Установить скорость эффектов
     public void setSpeed (byte speed) {
         sendMessage(SET_SPEED, speed);
     }
 
-    public void saveSettings() {
+    //Сохранить настройки
+    void saveSettings() {
         sendMessage(SAVE_SETTINGS);
     }
 
-    public void setModeTo(byte mode) {
+    //Включить выбранный из списка эффект
+    void setModeTo(byte mode) {
         sendMessage(SET_MODE_TO, (byte) (mode + 1));
     }
 
-    public void setAutoSave(boolean state) {
+    //Включить/отключить автоматическое сохранение изменений
+    void setAutoSave(boolean state) {
         byte result = (state) ? (byte) 1 : 0;
         sendMessage(SET_AUTO_SAVE, result);
     }
-    public void setAutoSaveDuration(byte duration) {
+
+    //Установить периодичность автосохранения
+    void setAutoSaveDuration(byte duration) {
         sendMessage(AUTO_SAVE_DURATION, duration);
     }
-    public void setAutoModeDuration(byte duration) {
+
+    //Установить время воспроизведения одного эффекта (авторежим)
+    void setAutoModeDuration(byte duration) {
         sendMessage(AUTO_MODE_DURATION, duration);
     }
-    public void setRandom(boolean state) {
+
+    //Включить/выключить случайное переключение режимов
+    void setRandom(boolean state) {
         byte result = (state) ? (byte) 1 : 0;
         sendMessage(SET_RANDOM, result);
     }

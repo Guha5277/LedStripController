@@ -74,7 +74,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     Menu controlMenu;
     Switch menuBtnOnOff;
     ImageButton menuBtnFav, menuBtnSave, menuBtnPref;
-    Switch menuAutoOnOff;
+    //Switch menuAutoOnOff;
 
 
     TextView txtCurMode;
@@ -160,6 +160,15 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
     //Обновление интерфейса в соотвествтии с актуальными данными
     private void updateUI(byte[] data){
+                final byte MODE = 1;
+                final byte BRIGHT = 2;
+                final byte AUTO = 3;
+                final byte SPEED = 4;
+                final byte AUTO_DURATION = 54;
+                final byte RANDOM = 55;
+                final byte AUTO_SAVE = 56;
+                final byte AUTO_SAVE_DURATION = 57;
+
                 //Инициализируем адаптер - в конструкторе, помимо контекста, указываем также список режимов и принятые данные
                 adapter = new CustomArrayAdapter(ControlActivity.this, modeList, data, mCommander);
                 choiceModeList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
@@ -173,37 +182,80 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 btnPause.setEnabled(true);
 
                 //Обновляем заголовок плейлиста
-                setPlaylistTitle(data[1]);
+                setPlaylistTitle(data[MODE]);
 
                 //Инициализируем ползунок яркости
                 seekBright.setEnabled(true);
-                seekBright.setProgress(data[2] & 0xFF);
-
-//                Log.d(TAG, "Bright from (byte): " + data[2] + ", to(int): " + (data[2] & 0xFF) );
+                seekBright.setProgress(data[BRIGHT] & 0xFF);
 
                 //Выключаем ползунок скорости, если у текущего режима отсутствует возможность ее регулировки
-                if (data[4] == 0){
+                if (data[SPEED] == 0){
                     seekSpeed.setEnabled(false);
                 }
                 else {
                     seekSpeed.setEnabled(true);
-                    tempDelay = data[4];
+                    tempDelay = data[SPEED];
                     seekSpeed.setProgress(9);
                     flagSeekSpeed = 9;
 
                 //   Log.d(TAG, "ControlActivity: TempDelay установлен в: " + tempDelay + ", data[4]: " + data[4]);
                 }
 
-                //Устанавливаем слушателей для ползунков
+                //Устанавливаем слушатели для ползунков
                 seekBright.setOnSeekBarChangeListener(seekBarListener);
                 seekSpeed.setOnSeekBarChangeListener(seekBarListener);
 
-                isAutoModeEnable = (data[3] == 1);
+
+                updatePreferences(data[AUTO], data[AUTO_SAVE], data[RANDOM], data[AUTO_DURATION], data[AUTO_SAVE_DURATION]);
 
                 //Оповещаем меню
                 invalidateOptionsMenu();
     }
 
+    //Обновление настроек в соответствии с актуальными данными
+    private void updatePreferences(byte autoState, byte autoSaveState, byte random, byte autoDuration, byte autoSaveDuration){
+        //Конвертируем пришедшие переменые в соответствии с требуемыми типами
+        boolean autoStateComed = (autoState == 1);
+        boolean autoSaveSateComed = (autoSaveState == 1);
+        boolean randomComed = (random == 1);
+        String autoDurationComed = String.valueOf(autoDuration);
+        String autoSaveDurationComed = String.valueOf(autoSaveDuration);
+
+        //Получаем экземпляр класса для работы с настройками
+        SharedPreferences sharedPreferences = getPreferences(MODE_PRIVATE);
+
+        //Загружаем параметры настроек из памяти устройства
+        boolean autoStateLoad = sharedPreferences.getBoolean("auto_state", false);
+        boolean autoSaveSateLoad = sharedPreferences.getBoolean("autosave_state", false);
+        boolean randomLoad = sharedPreferences.getBoolean("random_state", false);
+        String autoDurationLoad = sharedPreferences.getString("auto_duration", "5");
+        String autoSaveDurationLoad = sharedPreferences.getString("autosave_duration", "5");
+
+        //Получаем экземпляр класса для изменения настроек
+        SharedPreferences.Editor edit = sharedPreferences.edit();
+
+        // В случае необходимости - изменяем соовтетствующие параметры
+        if (autoStateComed != autoStateLoad){
+            edit.putBoolean("auto_state", autoStateComed);
+        }
+        if (autoSaveSateComed != autoSaveSateLoad){
+            edit.putBoolean("autosave_state", autoSaveSateComed);
+        }
+        if (randomComed != randomLoad) {
+            edit.putBoolean("random_state", randomComed);
+        }
+        if (!autoDurationComed.equals(autoDurationLoad)){
+            edit.putString("auto_duration", autoDurationComed);
+        }
+        if (!autoSaveDurationComed.equals(autoSaveDurationLoad)){
+            edit.putString("autosave_duration", autoSaveDurationComed);
+        }
+
+        //Сохраняем изменения
+        edit.apply();
+    }
+
+    //Управление заголовком плейлиста в соответствии с актуальными данными
     private void setPlaylistTitle(byte mode) {
         switch (mode){
             case 0:
@@ -223,6 +275,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
+    //Отключить ГИ
     void disableUI() {
         isInitialDataRecieved = false;
         isStripEnable = false;
@@ -255,14 +308,15 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
       //  Log.d(TAG, "ControlActivity: Потоки получены");
     }
 
+    //Закрытие Bluetooth-сокета
     private void closeSocket(){
         try{
-         //   Log.d(TAG, "ControlActivity: Попытка закрытия сокета closeSocket()...");
+            Log.d(TAG, "ControlActivity: Попытка закрытия сокета closeSocket()...");
             mmSocket.close();
         }catch(IOException ie){
             Log.e(TAG, "ControlActivity: Не удалось закрыть соединение! closeSocket()", ie);
         }
-//        Log.d(TAG, "ControlActivity: Соединение закрыто closeSocket()!");
+        Log.d(TAG, "ControlActivity: Соединение закрыто closeSocket()!");
     }
 
     //Основное меню приложения - включени/выключение ленты
@@ -273,11 +327,9 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         menuBtnOnOff = menu.findItem(R.id.swtOnOff).getActionView().findViewById(R.id.switchButton);
         menuBtnFav = menu.findItem(R.id.button_fav).getActionView().findViewById(R.id.favButton);
         menuBtnSave = menu.findItem(R.id.button_save).getActionView().findViewById(R.id.saveButton);
-        menuAutoOnOff = menu.findItem(R.id.automode).getActionView().findViewById(R.id.switchButton);
         menuBtnPref = menu.findItem(R.id.preference).getActionView().findViewById(R.id.settings);
 
         menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
-        menuAutoOnOff.setOnCheckedChangeListener(mOnCheckedAutoChangeListener());
 
         menuBtnPref.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -314,25 +366,13 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
             menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
             menuBtnSave.setEnabled(true);
             menuBtnSave.setEnabled(true);
-            menuAutoOnOff.setEnabled(true);
         }
         else {
             menuBtnOnOff.setEnabled(false);
             menuBtnSave.setEnabled(false);
             menuBtnSave.setEnabled(false);
-            menuAutoOnOff.setEnabled(false);
         }
 
-        if (isAutoModeEnable) {
-            menuAutoOnOff.setOnCheckedChangeListener(null);
-            menuAutoOnOff.setChecked(true);
-            menuAutoOnOff.setOnCheckedChangeListener(mOnCheckedAutoChangeListener());
-        }
-        else {
-            menuAutoOnOff.setOnCheckedChangeListener(null);
-            menuAutoOnOff.setChecked(false);
-            menuAutoOnOff.setOnCheckedChangeListener(mOnCheckedAutoChangeListener());
-        }
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -347,7 +387,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
             switch(msg.what){
                 case 0:
                     //... В случае ошибки подключения, закрываем диалог и выводим сообщение об ошибке
-                    Toast.makeText(ControlActivity.this, "Ошибка повторного подключения!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ControlActivity.this, "Ошибка повторного подключения! " + reconnectCount, Toast.LENGTH_SHORT).show();
                     if (reconnectCount == 10) {
                         reconnectCount = 1;
 //                        Log.d(TAG, "ControlActivity: Достигнуто максимальное количество попыток подключения(10)!");
@@ -367,7 +407,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                     getStreams();
 
                     InputThread inputThread = new InputThread(mInputStream, ControlActivity.this);
-                    //inputThread.setEnabled(true);
                     inputThread.start();
 
                     mCommander = new Commander(mOutputStream);
@@ -383,36 +422,31 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     //Поток инициализации графическо интерфейса первичными данными
     class ThreadInitialize extends Thread {
         int count = 0;
-        private final Byte GET_INITIAL_DATA = 1;
+
         @Override
         public void run() {
             super.run();
+
+            //10 попыток на принятие данных инициализации
             while (count < 10) {
-                sendMessage(GET_INITIAL_DATA);
+                //Отправляем запрос на данные инициализации
+                mCommander.getInitialData();
+
                 try {
+                    //Небольшая пауза
                     Thread.sleep(200);
+
+                    //Проверяем, пришли ли данные
                     if(isInitialDataRecieved){
-                        //updateUI(isInitialDataRecieved);
-//                        Log.d(TAG, "Поток InitializeData завершен со счетчиком: " + count);
+                        //Если да - прерываем метод
                         return;
                     }
                     count++;
                 } catch (Exception ex) {
                     Log.e(TAG, "Ошибка потока Initialize Thread", ex);
                 }
-
                 disableUI();
             }
-//            Log.d(TAG, "Ошибка инициализации данных");
-        }
-        private void sendMessage(byte ... data){
-            try{
-//                Log.d(TAG, "ControlActivity: Попытка отправки данных: " + Arrays.toString(data) + " ...");
-                mOutputStream.write(data);
-            }catch (IOException ie){
-                Log.e(TAG, "ControlActivity: Ошибка отправки данных!", ie);
-            }
-//            Log.d(TAG, "ControlActivity: Данные отправлены");
         }
     }
 
@@ -429,12 +463,15 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                         break;
 
                     case BluetoothDevice.ACTION_ACL_DISCONNECTED:
-                        //Останавливаем поток входящих данных
-                        stopInputThread();
+                        //Останавливаем поток входящих данных, закрываем сокет
+                        stopThread(mInputThread);
+                        closeSocket();
+
+                        //Отключаем UI
                         disableUI();
+
 //                        Log.d(TAG, "ControlActivity: Соединение потеряно, попытка переподключения");
                         Toast.makeText(ControlActivity.this, "Соединение потеряно!!", Toast.LENGTH_SHORT).show();
-                        closeSocket();
 
                         ConnectThread connectThread = new ConnectThread(mmSocket.getRemoteDevice(), mHandler);
                         connectThread.start();
@@ -519,10 +556,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                         //Если значение скорости нулевое, то отключить ползунок скорости
                         seekSpeed.setEnabled(false);
                     }
-
-
-
-
                     break;
 
                 case PAUSE_PLAY:
@@ -591,7 +624,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     protected void onDestroy(){
         super.onDestroy();
         //Останавливаем поток входящих данных и закрываем сокет
-        stopInputThread();
+        stopThread(mInputThread);
         closeSocket();
 
         //Снятие слушателей при уничтожении Активити
@@ -650,36 +683,45 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         };
     }
 
+    //
     private SeekBar.OnSeekBarChangeListener seekBarListener = new SeekBar.OnSeekBarChangeListener () {
 
         @Override
         public void onStartTrackingTouch(SeekBar seekBar) {
-
         }
 
+        //Данный слушатель нужен только для полузнка скорости и сохраняет последнее его значение "progress"
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
-
+            switch(seekBar.getId()){
+                case R.id.seekSpeed:
+                    flagSeekSpeed = seekSpeed.getProgress();
+                    Log.d(TAG, "ControlActivity: flagSeekSpeed (onStopListener) :" + flagSeekSpeed);
+                    break;
+            }
         }
 
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            //Получаем ID ползунка, значение которого было изменено
             switch(seekBar.getId()){
+                //Яркость
                 case R.id.seekBright:
+                    //Отправляем новую яркость
                     mCommander.setBright((byte)progress);
                     break;
 
+                //Скорость
                 case R.id.seekSpeed:
-                   // int value = (Byte) seekSpeed.getTag();
 
-                    flagSeekSpeed = progress;
-                    Log.d(TAG, "ControlActivity: flagSeekSpeed (listener) :" + flagSeekSpeed);
+                    //Сохраняем текущий прогресс в переменную
 
-                    double speed = miltiplier[flagSeekSpeed] * tempDelay;
-                    byte spidoz = (byte) speed;
-                    Log.d(TAG, "Speed(Int): " + (spidoz & 0xFF));
-                    //double speed = convertValue.get(progress) * value;
+                  //  Log.d(TAG, "ControlActivity: flagSeekSpeed (listener) :" + flagSeekSpeed);
 
+                    //Высчитываем новую скорость
+                    double speed = miltiplier[progress] * tempDelay;
+
+                    //Отправляем
                     mCommander.setSpeed((byte) speed);
 
                     //Log.d(TAG, "SeekSpeed Value: " + convertValue.get(progress) * value);
@@ -688,21 +730,23 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         }
     };
 
-    void stopInputThread(){
-      //  if(mInputThread != null) mInputThread.setEnabled(false);
-        //Убиваем поток InputThread
-        if (mInputThread.isAlive()) {
-            mInputThread.interrupt();
+    //Остановка поток InputThread
+    void stopThread(Thread thread){
+        if (thread.isAlive()) {
+            thread.interrupt();
         } else {
             Log.d(TAG, "InputThread УЖЕ был остановлен!");
         }
 
-//        if (!mInputThread.isAlive()) Log.d(TAG, "InputThread был остановлен методом interrupt()");
+        if (!thread.isAlive()) Log.d(TAG, thread.getName() + " был остановлен методом interrupt()");
     }
 
+    //Слушатель изменения настроек приложения
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        //Проверка измененного параметра по ключу
         switch (key) {
+            //Активация/деактивация авторежима
             case "auto_state": {
                 boolean result = sharedPreferences.getBoolean(key, false);
                 mCommander.setAutoMode(result);
@@ -710,13 +754,17 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 Log.d(TAG, "Авторежим установлен в: " + result);
                 break;
             }
+
+            //Продолжительность воспроизведения одного эффекта в авторежиме
             case "auto_duration": {
                 int result = Integer.parseInt(sharedPreferences.getString(key, "0"));
                 mCommander.setAutoModeDuration((byte) result);
 
-                Log.d(TAG, "Длительность авторежима установлеа в: " + result);
+                Log.d(TAG, "Длительность авторежима установлена в: " + result);
                 break;
             }
+
+            //Случайное переключение режимов
             case "random_state": {
                 boolean result = sharedPreferences.getBoolean(key, false);
                 mCommander.setRandom(result);
@@ -724,6 +772,8 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 Log.d(TAG, "Случайное переключение: " + result);
                 break;
             }
+
+            //Автосохранение
             case "autosave_state": {
                 boolean result = sharedPreferences.getBoolean(key, false);
                 mCommander.setAutoSave(result);
@@ -731,6 +781,8 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 Log.d(TAG, "Автосохранение: " + result);
                 break;
             }
+
+            //Периодичность автосохранения
             case "autosave_duration": {
                 int result = Integer.parseInt(sharedPreferences.getString(key, "0"));
                 mCommander.setAutoSaveDuration((byte)result);
@@ -739,7 +791,5 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 break;
             }
         }
-
-      //  Log.d(TAG, key);
     }
 }
