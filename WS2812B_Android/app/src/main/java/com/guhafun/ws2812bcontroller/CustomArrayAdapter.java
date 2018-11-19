@@ -131,6 +131,8 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
             //Устанавливаем соответствующие цвета для
             convertView.setBackgroundColor(colorActive);
             holder.mText.setTextColor(Color.WHITE);
+            holder.mText.setPadding(50, 15, 0, 0);
+            holder.mText.setTextSize(20.0f);
             holder.mCheckBox.setTextColor(Color.WHITE);
         }
         //Если нет
@@ -138,6 +140,8 @@ class CustomArrayAdapter extends ArrayAdapter<String> {
             //Устанавливаем соответствующие цвета
             convertView.setBackgroundColor(colorDeactive);
             holder.mText.setTextColor(Color.BLACK);
+            holder.mText.setPadding(0, 25, 0, 0);
+            holder.mText.setTextSize(16.0f);
             holder.mCheckBox.setTextColor(Color.BLACK);
         }
 

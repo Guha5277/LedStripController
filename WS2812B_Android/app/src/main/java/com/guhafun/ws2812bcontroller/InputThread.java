@@ -13,6 +13,9 @@ public class InputThread extends Thread{
     private String TAG = "ConLog";
     private InputStream inputStream;
     private Context mContext;
+    private boolean isInitialDataRecieved = false;
+
+    boolean stop = false;
 
     //Константа со значением данных для иницализации
     private final byte INITIAL_DATA_LENGHT = 58;
@@ -31,10 +34,12 @@ public class InputThread extends Thread{
         int readCount;
         byte[] data;
 
-        while(true) {
+
+        while(!stop) {
             try {
                 //Если в буффере есть доступные данные для считывания
                 if (inputStream.available() > 0) {
+
                     //Сохраняем количество байт для считывания в счетчик
                     count = inputStream.available();
 
@@ -42,7 +47,6 @@ public class InputThread extends Thread{
 
                     //Проверяем их количество
                     if (count > 0 && count < 54) {
-
                         Log.d(TAG, "InputThread: Доступно байт: " + count);
                         //Присваиваем счетчику количество доступных байт, создаем эквивалентный счетчику массив, считываем данные и отправляем изменения в главный поток
                         count = inputStream.available();
@@ -50,7 +54,10 @@ public class InputThread extends Thread{
                         //Считываем и отправляем полученные данные
                         data = new byte[count];
                         readCount = inputStream.read(data);
-                        messageProcessing(data);
+
+                        if (isInitialDataRecieved) {
+                            messageProcessing(data);
+                        }
 
                         Log.d(TAG, "InputThread: Принято байт: " + readCount + ", Содердимое: " + Arrays.toString(data));
                     }
@@ -64,8 +71,11 @@ public class InputThread extends Thread{
                         readCount = inputStream.read(data);
                         messageProcessing(data);
 
+                        isInitialDataRecieved = true;
+
                         Log.d(TAG, "InputThread: Принято байт (=58): " + readCount + ", Содердимое: " + Arrays.toString(data));
                     }
+
 
                     //Если пришла какая-то неведомая фигня, то просто очищаем буфер
                     if (count > INITIAL_DATA_LENGHT){
@@ -79,6 +89,7 @@ public class InputThread extends Thread{
 
                 }catch(IOException ie){
                 Log.e(TAG, "InputThread: Ошибка при получении данных!", ie);
+                stopInputThread();
             }
         }
     }
@@ -107,7 +118,6 @@ public class InputThread extends Thread{
                 }
                 break;
 
-            case ON_OFF:
             case PAUSE_PLAY:
             case FAV_MODE:
             case AUTO_MODE:
@@ -119,6 +129,7 @@ public class InputThread extends Thread{
                 }
                 break;
 
+            case ON_OFF:
             case PREV_MODE:
             case NEXT_MODE:
             case ACT_DEACT_MODE:
@@ -147,5 +158,9 @@ public class InputThread extends Thread{
         Log.d(TAG, "InputThread отправлено в главный поток: " + inputData[0] + ", с содержимым: " + Arrays.toString(inputData));
 
         LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
+    }
+
+    public void stopInputThread(){
+        stop = true;
     }
 }

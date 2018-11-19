@@ -92,7 +92,7 @@
         app:layout_constraintVertical_bias="0.666" />
 
     <TableLayout
-        android:layout_width="match_parent"
+        android:layout_width="348dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
@@ -113,7 +113,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="@dimen/padding_speed_bright"
+                android:layout_marginTop="5dp"
                 android:layout_marginRight="@dimen/padding_speed_bright"
+                android:layout_weight="0"
                 android:text="@string/bright"
                 android:textSize="14sp"
                 tools:layout_editor_absoluteX="47dp"
@@ -121,10 +123,11 @@
 
             <SeekBar
                 android:id="@+id/seekBright"
-                android:layout_width="250dp"
-                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:layout_height="29dp"
                 android:layout_marginLeft="@dimen/padding_speed_bright"
                 android:layout_marginRight="@dimen/padding_speed_bright"
+                android:layout_weight="1"
                 android:max="255"
                 tools:layout_editor_absoluteX="91dp"
                 tools:layout_editor_absoluteY="419dp" />
@@ -139,7 +142,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="@dimen/menu_item_margin"
+                android:layout_marginTop="5dp"
                 android:layout_marginRight="@dimen/menu_item_margin"
+                android:layout_weight="0"
                 android:text="@string/speed"
                 android:textSize="14sp"
                 tools:layout_editor_absoluteX="8dp"
@@ -147,10 +152,11 @@
 
             <SeekBar
                 android:id="@+id/seekSpeed"
-                android:layout_width="250dp"
-                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:layout_height="30dp"
                 android:layout_marginStart="@dimen/menu_item_margin"
                 android:layout_marginEnd="@dimen/padding_speed_bright"
+                android:layout_weight="1"
                 android:max="18"
                 tools:layout_editor_absoluteX="91dp"
                 tools:layout_editor_absoluteY="386dp" />

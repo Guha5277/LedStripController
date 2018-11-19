@@ -49,7 +49,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
     //Два флага-состояния включенности ленты и авторежима
     private boolean isStripEnable = false;
-    private boolean isAutoModeEnable = false;
 
     //Флаг используемы для приема начальных значений от МК
     static boolean isInitialDataRecieved = false;
@@ -174,6 +173,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 choiceModeList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
                 choiceModeList.setAdapter(adapter);
                 adapter.notifyDataSetChanged();
+
 
                 //Активируем список и кнопки
                 choiceModeList.setEnabled(true);
@@ -359,11 +359,18 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         controlMenu = menu;
-        if (isStripEnable){
+        if (isInitialDataRecieved){
             menuBtnOnOff.setEnabled(true);
-            menuBtnOnOff.setOnCheckedChangeListener(null);
-            menuBtnOnOff.setChecked(true);
-            menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
+            if (isStripEnable) {
+                menuBtnOnOff.setOnCheckedChangeListener(null);
+                menuBtnOnOff.setChecked(true);
+                menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
+            }
+            else {
+                menuBtnOnOff.setOnCheckedChangeListener(null);
+                menuBtnOnOff.setChecked(false);
+                menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
+            }
             menuBtnSave.setEnabled(true);
             menuBtnSave.setEnabled(true);
         }
@@ -464,7 +471,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
                     case BluetoothDevice.ACTION_ACL_DISCONNECTED:
                         //Останавливаем поток входящих данных, закрываем сокет
-                        stopThread(mInputThread);
+                        stopThread();
                         closeSocket();
 
                         //Отключаем UI
@@ -484,7 +491,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     //Слушатель для обновления UI принятыми данными
     BroadcastReceiver inputThreadListener = new BroadcastReceiver() {
         private final byte INIT = 1;
-        //private final byte ON_OFF = 2;
+        private final byte ON_OFF = 2;
         private final byte PREV_MODE = 3;
         private final byte NEXT_MODE = 4;
         private final byte PAUSE_PLAY = 5;
@@ -506,7 +513,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                 case INIT:
                     if (data.length == 58) {
                         isInitialDataRecieved = true;
-                        isStripEnable = true;
+                        if (data[1] > 0) isStripEnable = true;
                         updateUI(data);
                     }
 
@@ -514,18 +521,20 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                     break;
 
                 //Включение - выключение
-//                case ON_OFF:
-//                    if (data[1] == 1 && !menuBtnOnOff.isChecked()){
-//                        menuBtnOnOff.setOnCheckedChangeListener(null);
-//                        menuBtnOnOff.setChecked(true);
-//                        menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
-//                    }
-//                    else if (data[1] == 0 && menuBtnOnOff.isChecked()){
-//                        menuBtnOnOff.setOnCheckedChangeListener(null);
-//                        menuBtnOnOff.setChecked(false);
-//                        menuBtnOnOff.setOnCheckedChangeListener(mOnCheckedChangeListener());
-//                    }
-//                    break;
+                case ON_OFF:
+                    if (data[1] == 1 && !menuBtnOnOff.isChecked()){
+                        isStripEnable = true;
+                        invalidateOptionsMenu();
+                    }
+                    else if (data[1] == 0 && menuBtnOnOff.isChecked()){
+                        isStripEnable = false;
+                        invalidateOptionsMenu();
+                    }
+
+                    setPlaylistTitle(data[2]);
+                    adapter.setCurrentMode(data[2]);
+
+                    break;
 
                 //Переключение режимов
                 case PREV_MODE:
@@ -556,6 +565,12 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                         //Если значение скорости нулевое, то отключить ползунок скорости
                         seekSpeed.setEnabled(false);
                     }
+
+                    if (!menuBtnOnOff.isChecked()){
+                        isStripEnable = true;
+                        invalidateOptionsMenu();
+                    }
+
                     break;
 
                 case PAUSE_PLAY:
@@ -567,7 +582,12 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
                     break;
 
                 case FAV_MODE:
-                    Toast.makeText(ControlActivity.this, "Режим " + modeList[data[1]-1] + " был установлен стартовым" , Toast.LENGTH_SHORT).show();
+                    if(data[1] != 0) {
+                        Toast.makeText(ControlActivity.this, "Режим " + modeList[data[1] - 1] + " был установлен стартовым", Toast.LENGTH_SHORT).show();
+                    }
+                    else {
+                        Toast.makeText(ControlActivity.this, "Стартовый режим удален", Toast.LENGTH_SHORT).show();
+                    }
                     break;
 
                 case ACT_DEACT_MODE:
@@ -624,7 +644,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     protected void onDestroy(){
         super.onDestroy();
         //Останавливаем поток входящих данных и закрываем сокет
-        stopThread(mInputThread);
+        stopThread();
         closeSocket();
 
         //Снятие слушателей при уничтожении Активити
@@ -637,8 +657,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     @Override
     protected void onStop() {
         super.onStop();
-       // closeSocket();
-
+        //stopThread();
     }
 
     //Обработчик нажатий на элементы меню
@@ -669,21 +688,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         };
     }
 
-    //Слушатель переключателя включения-выключения авторежима
-    private CompoundButton.OnCheckedChangeListener mOnCheckedAutoChangeListener(){
-        return new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                       // isAutoModeEnable = !isChecked;
-                        mCommander.setAutoMode(isChecked);
-                      //  invalidateOptionsMenu();
-
-                        Log.d(TAG, "Listener");
-                }
-        };
-    }
-
-    //
+    //Слушатель ползунков
     private SeekBar.OnSeekBarChangeListener seekBarListener = new SeekBar.OnSeekBarChangeListener () {
 
         @Override
@@ -731,14 +736,16 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     };
 
     //Остановка поток InputThread
-    void stopThread(Thread thread){
-        if (thread.isAlive()) {
-            thread.interrupt();
+    void stopThread( ){
+        if (mInputThread.isAlive()) {
+            Log.d(TAG, "Остановка потока InputThread");
+            mInputThread.stopInputThread();
         } else {
             Log.d(TAG, "InputThread УЖЕ был остановлен!");
         }
 
-        if (!thread.isAlive()) Log.d(TAG, thread.getName() + " был остановлен методом interrupt()");
+
+        if (!mInputThread.isAlive()) Log.d(TAG, mInputThread.getName() + " был остановлен методом interrupt()");
     }
 
     //Слушатель изменения настроек приложения
