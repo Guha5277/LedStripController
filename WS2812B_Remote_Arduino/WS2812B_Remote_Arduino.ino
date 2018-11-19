@@ -115,9 +115,9 @@ void setup() {
 }
 
 void loop() {
-//  if (command[0]) {
-//    readCommand(command[0]);
-//  }
+  if (command[0]) {
+    readCommand(command[0]);
+  }
 
  //Если включен авторежим
   if (auto_mode) {
@@ -302,7 +302,7 @@ void sendResponce (byte a) {
   Serial.write (a);
   switch (a) {
     case 1: sendSettings(); break;
-    case 2: Serial.write(isStripOn); break;
+    case 2: Serial.write(isStripOn); Serial.write(ledMode); break;
     case 3:
     case 4:
     case 13: sendCurrentMode(); break;
