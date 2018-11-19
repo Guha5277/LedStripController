@@ -18,10 +18,12 @@ byte ledModel = 1;
 byte startMode = 0;
 boolean haveSpeed = false;
 byte ledModes[49] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+byte autoModeCountrer[49] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 int max_bright = 5;
 int thisdelay = 0;
 
 boolean isRandomEnabled = false;
+byte randomCounter = 0;
 boolean isAutoSaveEnabled = false;
 boolean isNeedToSaveData = false;
 
@@ -76,8 +78,12 @@ int lcount = 0;              //-ANOTHER COUNTING VAR
 
 void setup() {
   Serial.begin(115200);
-  
+
   loadSettings();
+
+  if (isRandomEnabled) {
+    setRandom(1);
+  }
 
   LEDS.setBrightness(max_bright);  // ограничить максимальную яркость
   LEDS.addLeds<WS2812B, LED_DT, GRB>(leds, LED_COUNT);  // настрйоки для нашей ленты (ленты на WS2811, WS2812, WS2812B)
@@ -86,31 +92,31 @@ void setup() {
 
   change_mode(ledMode);
 
-//    EEPROM.begin(64);
-//    
-//      EEPROM.write(0, 100);
-//      EEPROM.write(1, 3);
-//      EEPROM.write(2, 1);
-//  
-//       int index = 0;
-//       for(int z = 3; z < 52; z++){
-//       EEPROM.write(z, ledModes[index]);
-//       index++;
-//     }
-//
-//    EEPROM.commit(); 
-//    EEPROM.end();
+  //    EEPROM.begin(64);
+  //
+  //      EEPROM.write(0, 100);
+  //      EEPROM.write(1, 3);
+  //      EEPROM.write(2, 1);
+  //
+  //       int index = 0;
+  //       for(int z = 3; z < 52; z++){
+  //       EEPROM.write(z, ledModes[index]);
+  //       index++;
+  //     }
+  //
+  //    EEPROM.commit();
+  //    EEPROM.end();
 
-//  EEPROM.begin(64);
-//  
-//  EEPROM.write(52, 10);
-//  EEPROM.write(53, 0);
-//  EEPROM.write(54, 0);
-//  EEPROM.write(55, 5);
-//
-//  EEPROM.commit(); 
-//  EEPROM.end();
-  
+  //  EEPROM.begin(64);
+  //
+  //  EEPROM.write(52, 10);
+  //  EEPROM.write(53, 0);
+  //  EEPROM.write(54, 0);
+  //  EEPROM.write(55, 5);
+  //
+  //  EEPROM.commit();
+  //  EEPROM.end();
+
 }
 
 //Основной цикл программы
@@ -124,48 +130,48 @@ void loop() {
   }
 
 
-//Если включен авторежим
+  //Если включен авторежим
   if (auto_mode) {
     //Проверяем, истекло ли время таймера
     if (millis() - last_change > auto_mode_duration * 1000) {
-      
+
       //Если включен режим случайной смены эффектов
       if (isRandomEnabled) {
         changeModeRandom();
       }
-      
+
       //Иначе - просто включаем следующий режим
       else {
         nextMode();
       }
-      
+
       last_change = millis();
       sendResponce(4);
     }
   }
 
- //Если включен режим автосохранения и есть необходимость сохранить настройки
-  if (isAutoSaveEnabled && isNeedToSaveData){
+  //Если включен режим автосохранения и есть необходимость сохранить настройки
+  if (isAutoSaveEnabled && isNeedToSaveData) {
 
     //Если таймер автосохранения истек
-     if (millis() - last_change_autosave > auto_save_duration * 1000){
+    if (millis() - last_change_autosave > auto_save_duration * 1000) {
       //Сбрасываем флаг необходимости сохранения настрок
       isNeedToSaveData = false;
-      
+
       //Сохраняем настройки
       saveSettingsToMem();
-      
+
       //Отправляем уведомление клиенту
       sendResponce(12);
 
       last_change_autosave = millis();
-     }
     }
-  
+  }
+
   //  if (millis() - last_change2 > change_time2){
-//    last_change2 = millis();
-//    Serial.write(100);
-//  }
+  //    last_change2 = millis();
+  //    Serial.write(100);
+  //  }
 
   switch (ledMode) {
     case 99: break;                           // пазуа
@@ -232,11 +238,11 @@ void serialEventRead() {
 /****Загрузка настроек из ПЗУ*****/
 void loadSettings() {
   EEPROM.begin(64);
-  
+
   max_bright = EEPROM.read(0);
   ledMode = EEPROM.read(1);
   auto_mode = EEPROM.read(2);
-  
+
   int index = 0;
   for (int z = 3; z < 52; z++) {
     ledModes[index] = EEPROM.read(z);
@@ -248,7 +254,7 @@ void loadSettings() {
   isAutoSaveEnabled = EEPROM.read(54);
   auto_save_duration = EEPROM.read(55);
 
-    EEPROM.end();
+  EEPROM.end();
 }
 
 /****Сохранение настроек в ПЗУ *****/
@@ -266,15 +272,15 @@ void saveSettingsToMem () {
     EEPROM.write(b, ledModes[i]);
     b++;
   }
-    
+
   EEPROM.write(52, auto_mode_duration);
   EEPROM.write(53, isRandomEnabled);
   EEPROM.write(54, isAutoSaveEnabled);
   EEPROM.write(55, auto_save_duration);
-  
-      EEPROM.commit();
-      EEPROM.end();
-  
+
+  EEPROM.commit();
+  EEPROM.end();
+
 }
 
 /****Очистка данных*****/
@@ -305,7 +311,7 @@ void readCommand(byte a) {
     case 14: autoSave(); isNeedToSaveData = true; break;
     case 15: autoSaveDuration(); isNeedToSaveData = true; break;
     case 16: autoModeDuration(); isNeedToSaveData = true; break;
-    case 17: setRandom(); isNeedToSaveData = true; break;
+    case 17: setRandom(command[1]); isNeedToSaveData = true; break;
   }
   sendResponce(a);
   clear_data();
@@ -317,7 +323,7 @@ void sendResponce (byte a) {
     case 1: sendSettings(); break;
     case 2: Serial.write(isStripOn); break;
     case 3:
-    case 4: 
+    case 4:
     case 13: sendCurrentMode(); break;
     case 5: Serial.write(isStripPaused); break;
     case 6: Serial.write(startMode); break;
@@ -327,10 +333,10 @@ void sendResponce (byte a) {
     case 10: Serial.write(max_bright); break;
     case 11: Serial.write(thisdelay); break;
     case 12: Serial.write(1); break;
-   // case 13: Serial.write(ledMode); break;
-   case 14: Serial.write(isAutoSaveEnabled); break;
-   case 15: Serial.write(auto_save_duration); break;
-   case 16: Serial.write(auto_mode_duration); break;
+    // case 13: Serial.write(ledMode); break;
+    case 14: Serial.write(isAutoSaveEnabled); break;
+    case 15: Serial.write(auto_save_duration); break;
+    case 16: Serial.write(auto_mode_duration); break;
 
   }
 }
@@ -361,14 +367,14 @@ void sendCurrentMode() {
 }
 
 /*****Включение и выключение ленты*****/
-void onOff() {  
+void onOff() {
   if (ledMode > 0) {
     temp_auto_mode = auto_mode;
     auto_mode = false;
-    
+
     ledModel = ledMode;
     change_mode(0);
-    isStripOn = 0;  
+    isStripOn = 0;
   }
   else {
     if (ledModel == 50) {
@@ -387,24 +393,24 @@ void onOff() {
 /*****Предыдущий режим *****/
 void prevMode() {      // Включить предыдущий режим
   if (isRandomEnabled) {
-  changeModeRandom();
-}
-else {
-  if (ledMode < 2 || ledMode == 99) {
-    ledMode = 49;
+    changeModeRandom();
   }
   else {
-    ledMode--;
-  }
-  while (!ledModes[ledMode - 1]) {
-    ledMode--;
-    if (ledMode == 0) {
+    if (ledMode < 2 || ledMode == 99) {
       ledMode = 49;
     }
-  }
+    else {
+      ledMode--;
+    }
+    while (!ledModes[ledMode - 1]) {
+      ledMode--;
+      if (ledMode == 0) {
+        ledMode = 49;
+      }
+    }
 
-  change_mode(ledMode);
- }
+    change_mode(ledMode);
+  }
 }
 
 /*****Пауза *****/
@@ -423,34 +429,45 @@ void pausePlay() {
 /*****Следующий режим *****/
 void nextMode() {
 
-if (isRandomEnabled) {
-  changeModeRandom();
-}
-else{
-  ledMode = (ledMode % 49) + 1;
-  while (!ledModes[ledMode - 1]) {
-    ledMode = (ledMode % 49) + 1;
+  if (isRandomEnabled) {
+    changeModeRandom();
   }
+  else {
+    ledMode = (ledMode % 49) + 1;
+    while (!ledModes[ledMode - 1]) {
+      ledMode = (ledMode % 49) + 1;
+    }
 
-  change_mode(ledMode);
-  
-}
+    change_mode(ledMode);
+
+  }
 }
 
 /*****Стартовый режим *****/
 void favMode() {
-    EEPROM.begin(64);
-  
+  EEPROM.begin(64);
+
   startMode = command[1]; //в command[1] - номер режима
   EEPROM.write(1, startMode);
 
-    EEPROM.commit();
-    EEPROM.end();
+  EEPROM.commit();
+  EEPROM.end();
 }
 
 /*****Включение-выключение режимов *****/
 void actDeactMode() {
   ledModes[command[1]] = command[2];  //в command[1] приходит номер режима, в command[2] - включение или выключение(0 или 1);
+
+  if (isRandomEnabled) {
+    if (ledModes[command[1]]) {
+      randomCounter++;
+      autoModeCountrer[command[1]] = 1;
+    }
+    else {
+      randomCounter--;
+      autoModeCountrer[command[1]] = 0;
+    }
+  }
 
 }
 
@@ -501,20 +518,37 @@ void set_Speed() {
   }
 }
 
-void setModeTo(){
-  if (command[1] > 0 && command[1] <= 49){
+void setModeTo() {
+  if (command[1] > 0 && command[1] <= 49) {
     ledMode = command[1];
     change_mode(ledMode);
   }
 }
 
 void changeModeRandom () {
-   ledModel = ledMode;
-   ledMode = random(1, 50);
   
-  while (!ledModes[ledMode - 1] || ledMode == ledModel) {
+  //Если не осталось режимов для воспроизведения
+  if (!randomCounter) {
+    for (int i = 0; i < 49; i++) {
+      //Получаем количество доступных режимов
+      if (ledModes[i]) {
+        randomCounter++;
+      }
+      //Копируем массив с текущим состоянием режимов
+      autoModeCountrer[i] = ledModes[i];
+    }    
+  }
+
+  //Помечаем текущий режим как "пройденный"
+  autoModeCountrer[ledMode-1] = 0;
+
+  ledMode = random(1, 50);
+  
+  while (!ledModes[ledMode - 1] || !autoModeCountrer[ledMode - 1]) {
     ledMode = random(1, 50);
   }
+  
+  randomCounter--;
   change_mode(ledMode);
 }
 
@@ -530,8 +564,25 @@ void autoModeDuration() {
   auto_mode_duration = command[1];
 }
 
-void setRandom () {
-  isRandomEnabled = command[1];
+void setRandom (byte result) {
+  isRandomEnabled = result;
+
+  //Если случайный режим включен
+  if (isRandomEnabled) {
+    //Обнуляем счётчик случайного режима
+    randomCounter = 0;
+
+
+    for (int i = 0; i < 49; i++) {
+      //Получаем количество доступных режимов
+      if (ledModes[i]) {
+        randomCounter++;
+      }
+      //Копируем массив с текущим состоянием режимов
+      autoModeCountrer[i] = ledModes[i];
+    }
+
+  }
 }
 
 void change_mode(int newmode) {
