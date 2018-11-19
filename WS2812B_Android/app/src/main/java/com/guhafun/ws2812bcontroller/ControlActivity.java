@@ -4,11 +4,10 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.os.Handler;
-import android.os.Message;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
@@ -27,7 +26,6 @@ import com.example.ws2812bcontroller.R;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
 
 public class ControlActivity extends AppCompatActivity implements View.OnClickListener, SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -46,6 +44,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
     //Строка для связи LocalBroadcastReceiver и InputThread
     public static String DATA_MESSAGE = "com.guhafun.message";
+    public static final String  ACTION_CONNECT = "com.guhafun.connect";
 
     //Два флага-состояния включенности ленты и авторежима
     private boolean isStripEnable = false;
@@ -92,7 +91,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
     private InputStream mInputStream;
 
     //Хэндлер для обмена сообщениями с потоком подключения (ConnectThread)
-    HandlerControl mHandler = null;
+    //HandlerControl mHandler = null;
 
     //Входящий поток приема данных
     InputThread mInputThread;
@@ -136,7 +135,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         modeList = this.getResources().getStringArray(R.array.mode_list);
 
         //Инициализируем Handler
-        mHandler = new HandlerControl();
+        //mHandler = new HandlerControl();
 
         //Регистрируем двух слушателей изменения состояния подключения
         registerReceiver(connectionStatusChanged, new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED));
@@ -144,6 +143,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
         //Регистрируем локального слушателя для приема данных от InputThread'a
         LocalBroadcastManager.getInstance(this).registerReceiver(inputThreadListener, new IntentFilter(DATA_MESSAGE));
+        LocalBroadcastManager.getInstance(this).registerReceiver(reconnectListener, new IntentFilter(ACTION_CONNECT));
 
         //Инициализация и запуск фонового потока, отвечающего за прием данных
         mInputThread = new InputThread(mInputStream, this);
@@ -154,8 +154,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 
 //        Log.d(TAG, "ControlActivity создано");
     }
-
-
 
     //Обновление интерфейса в соотвествтии с актуальными данными
     private void updateUI(byte[] data){
@@ -383,49 +381,6 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         return super.onPrepareOptionsMenu(menu);
     }
 
-    //Handler для связи с потоком ConnectThread
-   class HandlerControl extends Handler {
-        //Счетчик переподключений в случае потери связи
-        int reconnectCount = 1;
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            //По результатам сообщения(0 - ошибка подключения и 1 - соединение установлено...
-            switch(msg.what){
-                case 0:
-                    //... В случае ошибки подключения, закрываем диалог и выводим сообщение об ошибке
-                    Toast.makeText(ControlActivity.this, "Ошибка повторного подключения! " + reconnectCount, Toast.LENGTH_SHORT).show();
-                    if (reconnectCount == 10) {
-                        reconnectCount = 1;
-//                        Log.d(TAG, "ControlActivity: Достигнуто максимальное количество попыток подключения(10)!");
-//                        Log.d(TAG, "ControlActivity: Запуск MainActivity...");
-                        Intent intent = new Intent(ControlActivity.this, MainActivity.class);
-                        startActivity(intent);
-                    }
-                    else{
-                        reconnectCount++;
-                        Log.d(TAG, "ControlActivity: Попытка переподключения №" + reconnectCount + "...");
-                        ConnectThread connectThread = new ConnectThread(mmSocket.getRemoteDevice(), this);
-                        connectThread.start();
-                    }
-                    break;
-
-                case 1:
-                    getStreams();
-
-                    InputThread inputThread = new InputThread(mInputStream, ControlActivity.this);
-                    inputThread.start();
-
-                    mCommander = new Commander(mOutputStream);
-
-                    ThreadInitialize initializeThread = new ThreadInitialize();
-                    initializeThread.start();
-
-                    break;
-            }
-        }
-    }
-
     //Поток инициализации графическо интерфейса первичными данными
     class ThreadInitialize extends Thread {
         int count = 0;
@@ -480,7 +435,8 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
 //                        Log.d(TAG, "ControlActivity: Соединение потеряно, попытка переподключения");
                         Toast.makeText(ControlActivity.this, "Соединение потеряно!!", Toast.LENGTH_SHORT).show();
 
-                        ConnectThread connectThread = new ConnectThread(mmSocket.getRemoteDevice(), mHandler);
+                        //Инициализируем поток подключения
+                        ConnectThread connectThread = new ConnectThread(mmSocket.getRemoteDevice(), ControlActivity.this);
                         connectThread.start();
                         break;
                 }
@@ -640,6 +596,69 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         }
     };
 
+    //Слушатель при попытках переподключения
+    BroadcastReceiver reconnectListener = new BroadcastReceiver() {
+        int reconnectCount = 1;
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final int ERROR = 0;
+            final int DONE = 1;
+
+            String action = intent.getAction();
+
+            if (action.equals(ACTION_CONNECT)) {
+                switch (intent.getIntExtra("result", 0)) {
+                    case ERROR:
+                        //Если достигнул лимит по попыткам переподключения
+                        if (reconnectCount == 3) {
+                            //Создаем и показываем диалоговое окно с текстом ошибки
+                            android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(ControlActivity.this);
+
+                            builder.setTitle("Соединение потеряно!")
+                                    .setMessage("Достигнуто максимальное количество попыток переподключения! Проверьте доступность устройства!")
+                                    .setCancelable(false)
+                                    .setNegativeButton("OK", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            dialog.cancel();
+                                            finish();
+                                        }
+                                    });
+
+                            builder.show();
+                        }
+
+                        else {
+                            //Увеличиваем счётчи и пробуем переподключиться
+                            reconnectCount++;
+                            ConnectThread connectThread = new ConnectThread(mmSocket.getRemoteDevice(), ControlActivity.this);
+                            connectThread.start();
+                            // Log.d(TAG, "ControlActivity: Попытка переподключения №" + reconnectCount + "...");
+                        }
+                        break;
+
+                    case DONE:
+                        //Получаем потоки
+                        getStreams();
+
+                        //Заново запускаем поток-слушатель входящих данных
+                        InputThread inputThread = new InputThread(mInputStream, ControlActivity.this);
+                        inputThread.start();
+
+                        //Заново инициализиурем объект отправки сообщений
+                        mCommander = new Commander(mOutputStream);
+
+                        //Заново инициализиурем данные
+                        ThreadInitialize initializeThread = new ThreadInitialize();
+                        initializeThread.start();
+                        break;
+                }
+            }
+
+        }
+    };
+
     @Override
     protected void onDestroy(){
         super.onDestroy();
@@ -650,6 +669,7 @@ public class ControlActivity extends AppCompatActivity implements View.OnClickLi
         //Снятие слушателей при уничтожении Активити
         unregisterReceiver(connectionStatusChanged);
         LocalBroadcastManager.getInstance(ControlActivity.this).unregisterReceiver(inputThreadListener);
+        LocalBroadcastManager.getInstance(ControlActivity.this).unregisterReceiver(reconnectListener);
 
         Log.d(TAG, "ControlActivity уничтожено");
     }

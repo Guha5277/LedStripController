@@ -2,10 +2,6 @@
     <string name="app_name">WS2812B Controller</string>
     <string name="header_title" translatable="false">Header</string>
     <string name="item1" translatable="false">Item 1</string>
-    <string name="item2" translatable="false">Item 2</string>
-
-    <string name="pairedDevices">List of Paired Devices</string>
-    <string name="discoveredDevices">List of Discovered Devices</string>
 
     <string name="swtOnOff">Switch</string>
     <string name="btnConnect">Connect</string>
@@ -42,6 +38,9 @@
     <string name="pref_save_autosave_summary">Enable AutoSave</string>
     <string name="pref_autosave_duration">AutoSave Duration (seconds)</string>
     <string name="pref_autosave_duration_summary">AutoSave Duration (seconds)</string>
+
+    <string name="tvWelcome">Choose a device to connect</string>
+    <string name="tvWelcomeNone">Has no available devices</string>
 
     <string-array name="pref_autosave_duration_value">
         <item>15</item>
