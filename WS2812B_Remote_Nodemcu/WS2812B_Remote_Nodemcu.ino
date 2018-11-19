@@ -17,7 +17,7 @@ byte ledMode = 1;
 byte ledModel = 1;
 byte startMode = 0;
 boolean haveSpeed = false;
-byte ledModes[49] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+byte ledModes[49] = {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1};
 byte autoModeCountrer[49] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 int max_bright = 5;
 int thisdelay = 0;
@@ -38,10 +38,6 @@ byte r, g, b = 0;
 
 long last_change = 0;
 long change_time = 20000;
-
-//Переменные для хранения значения времени, необходимые для подтверждения подключенного состояния
-long last_change2 = 0;  //Временная переменная, в которой будут храниться время с последней отправки сообщения клиенту
-long change_time2 = 4000;  //Периодичность отправки сообщения клиенту (мс)
 
 // цвета мячиков для режима
 byte ballColors[3][3] = {
@@ -93,25 +89,28 @@ void setup() {
   change_mode(ledMode);
 
   //    EEPROM.begin(64);
-  //
+       
+          //Яркость
   //      EEPROM.write(0, 100);
+          //Стартовый режим
   //      EEPROM.write(1, 3);
+          //Авторежим
   //      EEPROM.write(2, 1);
-  //
+ 
+          //Массив с информацией о включенности каждого режима (1 - вкл, 0 - выкл)
   //       int index = 0;
   //       for(int z = 3; z < 52; z++){
   //       EEPROM.write(z, ledModes[index]);
   //       index++;
   //     }
-  //
-  //    EEPROM.commit();
-  //    EEPROM.end();
 
-  //  EEPROM.begin(64);
-  //
+      //Продолжительность воспроизведения одного эффекта в авторежиме (0-255 секунд)
   //  EEPROM.write(52, 10);
+      //Случайное переключение режимов (1 - вкл, 0 - выкл)
   //  EEPROM.write(53, 0);
+      //Автосохранение (1 - вкл, 0 - выкл)
   //  EEPROM.write(54, 0);
+      //Периодичность автосохранения (0 - 255 секунд).
   //  EEPROM.write(55, 5);
   //
   //  EEPROM.commit();
@@ -125,9 +124,9 @@ void loop() {
   serialEventRead();
 
   //Если пришел мусор - очищаем
-  if (command[0]) {
-    readCommand(command[0]);
-  }
+//  if (command[0]) {
+//    readCommand(command[0]);
+//  }
 
 
   //Если включен авторежим
@@ -164,6 +163,7 @@ void loop() {
       //Отправляем уведомление клиенту
       sendResponce(12);
 
+      //Обновляем переменную времени текущее время
       last_change_autosave = millis();
     }
   }
@@ -295,23 +295,22 @@ void clear_data() {
 /****Выполнение принятых комманд*****/
 void readCommand(byte a) {
   switch (a) {
-    //Отправка начальных значений (текущих настроек) клиенту
-    case 2: onOff(); break; //Включение - выключение
-    case 3: prevMode();  break; //Предыдущий режим
-    case 4: nextMode(); break; // Пауза - воспроизведение
-    case 5: pausePlay(); break; //Следующий режим
-    case 6: favMode(); break;//Режим по умолчанию (при включении ленты)
-    case 7: actDeactMode(); isNeedToSaveData = true; break; //ВКЛ - ВЫКЛ режимов из плейлиста
-    case 8: autoMode(); isNeedToSaveData = true; break; //ВКЛ - ВЫКЛ авторежима
-    case 9: setColor(); break; //
-    case 10: setBright(); isNeedToSaveData = true; break;//setBright
-    case 11: set_Speed(); break;
-    case 12: saveSettingsToMem(); break; //SaveModesToMem
-    case 13: setModeTo(); break;
-    case 14: autoSave(); isNeedToSaveData = true; break;
-    case 15: autoSaveDuration(); isNeedToSaveData = true; break;
-    case 16: autoModeDuration(); isNeedToSaveData = true; break;
-    case 17: setRandom(command[1]); isNeedToSaveData = true; break;
+    case 2: onOff(); break;               //Включение - выключение
+    case 3: prevMode();  break;           //Предыдущий режим
+    case 4: nextMode(); break;            //Следующий режим
+    case 5: pausePlay(); break;           // Пауза - воспроизведение
+    case 6: favMode(); break;             //Режим по умолчанию (при включении ленты)
+    case 7: actDeactMode(); isNeedToSaveData = true; break;        //ВКЛ - ВЫКЛ режимов из плейлиста
+    case 8: autoMode(); isNeedToSaveData = true; break;            //ВКЛ - ВЫКЛ авторежима
+    case 9: setColor(); break;                                     //Установка цвета
+    case 10: setBright(); isNeedToSaveData = true; break;          //Установка яркости
+    case 11: set_Speed(); break;                                   //Установка скорости
+    case 12: saveSettingsToMem(); break;            //Сохранение настроек в ПЗУ
+    case 13: setModeTo(); break;                    //Включить режим №...
+    case 14: autoSave(); isNeedToSaveData = true; break;           //Автосохранение
+    case 15: autoSaveDuration(); isNeedToSaveData = true; break;   //Периодичность автосохранения
+    case 16: autoModeDuration(); isNeedToSaveData = true; break;   //Периодичность смены режимов в авторежиме
+    case 17: setRandom(command[1]); isNeedToSaveData = true; break;   //Случайная смена режимов
   }
   sendResponce(a);
   clear_data();
@@ -337,7 +336,6 @@ void sendResponce (byte a) {
     case 14: Serial.write(isAutoSaveEnabled); break;
     case 15: Serial.write(auto_save_duration); break;
     case 16: Serial.write(auto_mode_duration); break;
-
   }
 }
 
@@ -468,7 +466,6 @@ void actDeactMode() {
       autoModeCountrer[command[1]] = 0;
     }
   }
-
 }
 
 /*****Авторежим *****/
@@ -518,6 +515,7 @@ void set_Speed() {
   }
 }
 
+//Включить конкретный режи
 void setModeTo() {
   if (command[1] > 0 && command[1] <= 49) {
     ledMode = command[1];
@@ -525,6 +523,7 @@ void setModeTo() {
   }
 }
 
+//Случайное переключение режима
 void changeModeRandom () {
   
   //Если не осталось режимов для воспроизведения
@@ -542,42 +541,51 @@ void changeModeRandom () {
   //Помечаем текущий режим как "пройденный"
   autoModeCountrer[ledMode-1] = 0;
 
+  //Генерируем новый режим
   ledMode = random(1, 50);
-  
+
+  //Генерируем режимы до тех пор, пока не будут выполнены два условия:
+  //1 - сгенерированный режим активирован в общем плейлисте
+  //2 - сгенерированный режим не был помечен как пройденный (чтобы исключить повторения режимов)
   while (!ledModes[ledMode - 1] || !autoModeCountrer[ledMode - 1]) {
     ledMode = random(1, 50);
   }
-  
+
+  //Уменьшаем счетчик случайных режимов и меняем режим
   randomCounter--;
   change_mode(ledMode);
 }
 
+//Автосохранение
 void autoSave() {
   isAutoSaveEnabled = command[1];
 }
 
+//Периодичность автосохранения
 void autoSaveDuration() {
   auto_save_duration = command[1];
 }
 
+//Периодичность переключения эффектов в авторежиме
 void autoModeDuration() {
   auto_mode_duration = command[1];
 }
 
+//Случайная смена эффектов
 void setRandom (byte result) {
   isRandomEnabled = result;
 
-  //Если случайный режим включен
+  //Если случайный режим был включен
   if (isRandomEnabled) {
     //Обнуляем счётчик случайного режима
     randomCounter = 0;
-
-
+    
     for (int i = 0; i < 49; i++) {
-      //Получаем количество доступных режимов
+      //Получаем количество доступных режимов (заносим в счётчик случайного режима)
       if (ledModes[i]) {
         randomCounter++;
       }
+      
       //Копируем массив с текущим состоянием режимов
       autoModeCountrer[i] = ledModes[i];
     }
