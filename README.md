@@ -55,7 +55,7 @@
 * Переключение режимов по порядку или случайно.
 * Ручное и автоматическое сохранение настроек (с настраиваемой периодичностью).
 
-### [ИНСТРУКЦИЯ ПО УСТАНОВКЕ И НАСТРОЙКЕ ЗДЕСЬ](https://github.com/Guha5277/LedStripController/blob/master/InstallationGuide.md)
+## [>>> ИНСТРУКЦИЯ ПО УСТАНОВКЕ И НАСТРОЙКЕ ЗДЕСЬ <<<](https://github.com/Guha5277/LedStripController/blob/master/InstallationGuide.md)
 
 ### Планы
 * Реализовать ручной выбор цвета
