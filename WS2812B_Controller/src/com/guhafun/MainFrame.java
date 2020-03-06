@@ -10,21 +10,26 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class MainFrame {
+/*TODO
+* 1. Наследование класса от JFrame
+* 2. Вынесение в отдельный класс данных, не относящихся к ГИ (константы, названия режимов и т.д.)
+* 3. Рефакторинг кода, перенос на новый тип взаимодействия ГИ и класса работающего с портом (реалзиация интерфейса)
+* 4. Добавление и удаление слушателей ГИ по необходимости (выпадающий список COM-портов) */
+class MainFrame extends JFrame implements SerialPortListener {
 
     //Константы - комманды
-    final private int CONNECT = 1;
-    final private int ON_OFF = 2;
-    final private int PREV = 3;
-    final private int NEXT = 4;
-    final private int PAUSE = 5;
-    final private int FAV = 6;
-    final private int ACT_DEACT_MODE = 7;
-    final private int SET_AUTO = 8;
-    final private int SET_COLOR = 9;
-    final private int SET_BRIGHT = 10;
-    final private int SET_SPEED = 11;
-    final private int SAVE_SETTINGS = 12;
+    private final int CONNECT = 1;
+    private final int ON_OFF = 2;
+    private final int PREV = 3;
+    private final int NEXT = 4;
+    private final int PAUSE = 5;
+    private final int FAV = 6;
+    private final int ACT_DEACT_MODE = 7;
+    private final int SET_AUTO = 8;
+    private final int SET_COLOR = 9;
+    private final int SET_BRIGHT = 10;
+    private final int SET_SPEED = 11;
+    private final int SAVE_SETTINGS = 12;
 
     //Флаг для готовности изменения списка режимов
     private boolean readyActDeactMode = false;
@@ -898,5 +903,40 @@ public class MainFrame {
 
     }
 
+    //SerialPort Events
+    @Override
+    public void onSerialPortConnected(String port, int baudRate) {
+
+    }
+
+    @Override
+    public void onSerialPortFailedToConnect(String port, int baudRate) {
+
+    }
+
+    @Override
+    public void onSerialPortClosed(String port) {
+
+    }
+
+    @Override
+    public void onSerialPortDataSent(int... message) {
+
+    }
+
+    @Override
+    public void onSerialPortDataReceived(int[] data) {
+
+    }
+
+    @Override
+    public void onSerialPortConfigReceived(int[] data) {
+
+    }
+
+    @Override
+    public void onException(Exception e) {
+
+    }
 }
 
