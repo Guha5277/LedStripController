@@ -4,6 +4,7 @@ import jssc.*;
 
 public class SerialPortController implements SerialPortEventListener{
     private SerialPort serialPort;
+    private final Integer[] baudRate = {600, 1200, 2400, 4800, 9600, 19200, 28800, 38400, 57600, 115200};
     private final int dataBits = 8;
     private final int stopBits = 1;
     private final int parity = 0;
@@ -54,6 +55,9 @@ public class SerialPortController implements SerialPortEventListener{
         }
     }
 
+    public Integer[] getBaudRateList(){
+        return baudRate;
+    }
 
     //Serial port events
     @Override

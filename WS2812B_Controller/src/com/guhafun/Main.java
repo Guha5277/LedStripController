@@ -17,7 +17,7 @@ public class Main {
 
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new MainFrame());
+        SwingUtilities.invokeLater(() -> new MainFrame("WS2812B controller"));
     }
 /***************Открытие порта ******************/
     public static void openPort(String comPort, int bRate) {
