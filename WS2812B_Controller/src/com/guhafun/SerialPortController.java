@@ -22,12 +22,12 @@ public class SerialPortController implements SerialPortEventListener{
     public void connect(String port, int baudRate){
         serialPort = new SerialPort(port);
         try {
+            serialPort.openPort();
             serialPort.setParams(baudRate, dataBits, stopBits, parity);
             serialPort.addEventListener(this);
             listener.onSerialPortConnected(port, baudRate);
         } catch (SerialPortException e) {
-            listener.onSerialPortFailedToConnect(port, baudRate);
-            listener.onException(e);
+            listener.onSerialPortFailedToConnect(port, baudRate, e);
         }
     }
 
@@ -46,12 +46,13 @@ public class SerialPortController implements SerialPortEventListener{
     }
 
     public void disconnect(){
+        String port = serialPort.getPortName();
         try {
-            String port = serialPort.getPortName();
             serialPort.closePort();
             listener.onSerialPortClosed(port);
         } catch (SerialPortException e) {
-            listener.onException(e);
+            listener.onSerialPortFailedToClose(port, e);
+            listener.onSerialPortClosed(port);
         }
     }
 
@@ -62,10 +63,10 @@ public class SerialPortController implements SerialPortEventListener{
     //Serial port events
     @Override
     public void serialEvent(SerialPortEvent serialPortEvent) {
-        if (serialPortEvent.isRXCHAR() && serialPortEvent.getEventValue() == 54) { //Если пришли настройки (54 байт в буфере)
+        if (serialPortEvent.isRXCHAR() && serialPortEvent.getEventValue() == 58) { //Если пришли настройки (54 байт в буфере)
 //            System.out.println("Setting has come!");
             try {
-                listener.onSerialPortConfigReceived(serialPort.readIntArray());
+                listener.onInitialDataReceived(serialPort.readIntArray());
             } catch (SerialPortException se) {
                 listener.onException(se);
             }
