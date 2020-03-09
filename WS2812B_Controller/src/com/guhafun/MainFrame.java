@@ -1,18 +1,17 @@
 package com.guhafun;
 
 import jssc.SerialPortList;
-
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Hashtable;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 
 /*TODO
-* 3. Рефакторинг кода, перенос на новый тип взаимодействия ГИ и класса работающего с портом (реалзиация интерфейса)*/
-class MainFrame extends JFrame implements SerialPortListener {
+ * 3. Рефакторинг кода, перенос на новый тип взаимодействия ГИ и класса работающего с портом (реалзиация интерфейса)*/
+class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
     private final SerialPortController serialPortController;
     private final CombComMouseListener comMouseListener;
 
@@ -27,7 +26,7 @@ class MainFrame extends JFrame implements SerialPortListener {
     private int[] ledModes = new int[49];       //Список активных режимов
     private int maxBright = 0;                  //Максимальная яркость
     private int autoMode = 0;                   //Состояние авторежима (0 - выключен, 1 - включен)
-    private int thisdelay = 0;                  //Значение задержки между итерациями эффектов (увеличивая это значение визуально изменить скорость воспроизведения, при уменьшении - наоборот)
+    private int delay = 0;                  //Значение задержки между итерациями эффектов (увеличивая это значение визуально изменить скорость воспроизведения, при уменьшении - наоборот)
     private int modesCount = WS2812B.modeNames.length; //общее количество режимов
 
     //Элементы графического интерфейса
@@ -53,8 +52,10 @@ class MainFrame extends JFrame implements SerialPortListener {
     private JSlider brightness;              //Слайдер "Яркость"
     private JSlider speed;                   //Слайдер "Скорость"
     private JTextArea jtxStatus;             //Текстовое поле с системной информацией
-    private JColorChooser colorChooser;      //Сдандарная панель выбора цвета
 //    AbstractColorChooserPanel colorPanels[] = colorChooser.getChooserPanels();
+
+    private JFrame colorChooserFrame;
+    private JColorChooser colorChooser;      //Сдандарная панель выбора цвета
 
     MainFrame(String frameTitle) {
         super(frameTitle);
@@ -85,7 +86,8 @@ class MainFrame extends JFrame implements SerialPortListener {
         brightness = new JSlider(JSlider.HORIZONTAL, 1, 255, 255);
         speed = new JSlider(JSlider.HORIZONTAL, 0, 15, 5);
         jtxStatus = new JTextArea();
-        colorChooser = new JColorChooser();
+        colorChooserFrame = new JFrame();
+        colorChooser = new JColorChooser(new Color(0, 0, 0));
     }
 
     private void setupUI() {
@@ -102,19 +104,12 @@ class MainFrame extends JFrame implements SerialPortListener {
         //Создаём верхнюю панель (для элементов подключения-отключения), задаём панели новый менеджер компоновки элементов
         JPanel connectPan = new JPanel();
         connectPan.setLayout(new GridBagLayout());
-
-        /*Настраиваем стили для наших элементов. Параметры, проинимаемые конструктором GridBagConstraints:
-         *gridx - номер ячейки расположения компонента по оси X (отсчёт идёт с левого верхнего угла, RELATIVE - означает положение предыдущего + 1);
-         *gridy - номер ячейки расположения компонента по оси Y
-         * gridwidth - количество ячеек, занимаемых элементом по вертикали
-         * gridheidth - количество ячеек, занимаемых элементов по горизонтали
-         * weightx, weighty - "вес" элемента - чем больше число(от 0.0 до 1.0), тем больше свободного места займёт элемент
-         * anchor - вырванивание внутри ячейки
-         * Insets - отступы
-         * ipadx - растягивание элемента по выосте
-         * ipady - растягивание элемента по ширине         */
-        GridBagConstraints contConnect1 = new GridBagConstraints(GridBagConstraints.RELATIVE, 0, 1, 1, 0, 0, GridBagConstraints.WEST, 0, new Insets(10, 20, 10, 0), 0, 0);
-        GridBagConstraints contConnect2 = new GridBagConstraints(GridBagConstraints.RELATIVE, 0, 1, 1, 0, 0, GridBagConstraints.WEST, 0, new Insets(10, 15, 10, 0), 0, 0);
+        GridBagConstraints contConnect1 = new GridBagConstraints(GridBagConstraints.RELATIVE,
+                0, 1, 1, 0, 0, GridBagConstraints.WEST,
+                0, new Insets(10, 20, 10, 0), 0, 0);
+        GridBagConstraints contConnect2 = new GridBagConstraints(GridBagConstraints.RELATIVE,
+                0, 1, 1, 0, 0, GridBagConstraints.WEST,
+                0, new Insets(10, 15, 10, 0), 0, 0);
 
         //Задаём размеры компонентов
         combCom.setPreferredSize(new Dimension(80, 25));
@@ -329,7 +324,6 @@ class MainFrame extends JFrame implements SerialPortListener {
         speed.setPreferredSize(new Dimension(160, 65));
         speed.addMouseListener(new SpeedMouseListener());
 
-
         //Добавляем компоненты на панель
         setUpPanel.add(chkAutoMode, contSettings1);
         setUpPanel.add(btColorChooser, contSettings2);
@@ -340,6 +334,13 @@ class MainFrame extends JFrame implements SerialPortListener {
         jtxStatus.setPreferredSize(new Dimension(450, 20));
         jtxStatus.setEditable(false);
 
+        //Настройка панели выбора произвольного цвета
+        JPanel colorChooserPanel = new JPanel();
+        colorChooserPanel.add(colorChooser);
+        colorChooserFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        colorChooserFrame.add(colorChooserPanel);
+        colorChooser.getSelectionModel().addChangeListener(this);
+
         //Настройка главного окна
         disableAll(true);
         this.setSize(450, 650);
@@ -349,6 +350,7 @@ class MainFrame extends JFrame implements SerialPortListener {
         this.add(scrollPane);
         this.add(setUpPanel);
         this.add(jtxStatus);
+        jtxStatus.setBackground(new Color(238, 238, 238));
         this.setResizable(false);
         this.setVisible(true);
     }
@@ -362,20 +364,20 @@ class MainFrame extends JFrame implements SerialPortListener {
         @Override
         public void mouseEntered(MouseEvent e) {
             //Обновляем список доступных COM-портов для подключения
-            if (!Main.isConnected) {
-                int lastSelectedIndex;
-                String[] comPorts;
+            int lastSelectedIndex;
+            String[] comPorts;
 
-                lastSelectedIndex = combCom.getSelectedIndex();
-                combCom.removeAllItems();
+            lastSelectedIndex = combCom.getSelectedIndex();
+            combCom.removeAllItems();
 
-                comPorts = SerialPortList.getPortNames();
-                for (String s : comPorts) {
-                    combCom.addItem(s);
-                }
-                if (lastSelectedIndex <= comPorts.length - 1) {
-                    combCom.setSelectedIndex(lastSelectedIndex);
-                }
+            comPorts = SerialPortList.getPortNames();
+            for (String s : comPorts) {
+                combCom.addItem(s);
+            }
+            if (lastSelectedIndex <= comPorts.length - 1) {
+                combCom.setSelectedIndex(lastSelectedIndex);
+            } else {
+                combCom.setSelectedIndex(comPorts.length - 1);
             }
         }
 
@@ -392,7 +394,6 @@ class MainFrame extends JFrame implements SerialPortListener {
         }
     }
 
-
     //Общий слушатель для кнопок
     private class ButtonsListener implements ActionListener {
         @Override
@@ -400,15 +401,13 @@ class MainFrame extends JFrame implements SerialPortListener {
             String code = e.getActionCommand();
             switch (code) {
                 case "connect":
-                    if(combCom.getSelectedItem() == null){
+                    if (combCom.getSelectedItem() == null) {
                         JOptionPane.showMessageDialog(MainFrame.this, "Нет доступных устройств для подключения!\nПроверьте правильность подключения и повторите попытку", "Ошибка!", JOptionPane.WARNING_MESSAGE);
                     } else {
                         btConnect.setEnabled(false);
                         combCom.setEnabled(false);
                         combBaud.setEnabled(false);
                         serialPortController.connect(combCom.getSelectedItem().toString(), (Integer) combBaud.getSelectedItem());
-                        serialPortController.sendMessage(WS2812B.CONNECT);
-                        new InitialDataKeeper().start();
                     }
                     break;
                 case "disconnect":
@@ -531,7 +530,7 @@ class MainFrame extends JFrame implements SerialPortListener {
             //Скорость регулируется путём изменения перменной задержки - чем меньше её значение, тем быстрее работает эффект
             //Считываем значение слайдера (0-15), каждое значение соответствует своей ячейке в массиве hashSpeed
             int arrayIndex = speed.getValue();
-            int thisdelayChanged = (int) (thisdelay / WS2812B.speedMultiplier[arrayIndex]);
+            int thisdelayChanged = (int) (delay / WS2812B.speedMultiplier[arrayIndex]);
 
             System.out.println(thisdelayChanged);
             serialPortController.sendMessage(WS2812B.SET_SPEED, thisdelayChanged);
@@ -565,29 +564,21 @@ class MainFrame extends JFrame implements SerialPortListener {
     private class ButtonColorListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-
-            Color initColor = btColorChooser.getBackground();
-            Color bg = JColorChooser.showDialog(scrollPane, "Выберите цвет", initColor);
-            if (bg != null) {
-                btColorChooser.setBackground(bg);
-
-                int r = bg.getRed();
-                int g = bg.getGreen();
-                int b = bg.getBlue();
-
-                serialPortController.sendMessage(WS2812B.SET_COLOR, r, g, b);
-
-            }
+            int x = MainFrame.this.getX();
+            int y = MainFrame.this.getY();
+            colorChooserFrame.setLocation(x - 85, y + 150);
+            colorChooserFrame.pack();
+            colorChooserFrame.setVisible(true);
         }
     }
 
-
-    private class InitialDataKeeper extends Thread{
+    private class InitialDataKeeper extends Thread {
         int counter = 0;
+
         @Override
         public void run() {
-            while (true){
-                if (counter == 10){
+            while (true) {
+                if (counter == 10) {
                     failedToGetInitialData();
                     return;
                 }
@@ -603,7 +594,7 @@ class MainFrame extends JFrame implements SerialPortListener {
         }
     }
 
-    private void failedToGetInitialData(){
+    private void failedToGetInitialData() {
         JOptionPane.showMessageDialog(this, "Не могу инициализировать данные!\nПроверьте правильность скетча и настройки подключения (скорость)!", "Ошибка", JOptionPane.ERROR_MESSAGE);
         serialPortController.disconnect();
     }
@@ -631,11 +622,11 @@ class MainFrame extends JFrame implements SerialPortListener {
                 case WS2812B.PREV:
                 case WS2812B.NEXT:
                     currentLedMode = recivedData[1];
-                    thisdelay = recivedData[2];
+                    delay = recivedData[2];
                     lblCurModeName.setText(WS2812B.modeNames[currentLedMode - 1]);
                     lblCurNumOfModes.setText(currentLedMode + "/" + modesCount);
 
-                    if (thisdelay == 0) {
+                    if (delay == 0) {
                         speed.setEnabled(false);
                     } else {
                         speed.setEnabled(true);
@@ -654,7 +645,7 @@ class MainFrame extends JFrame implements SerialPortListener {
                         speed.setEnabled(false);
                     } else {
                         jtxStatus.setText("Текущий режим " + currentLedMode);
-                        if (thisdelay == 0) {
+                        if (delay == 0) {
                             speed.setEnabled(false);
                         } else {
                             speed.setEnabled(true);
@@ -733,7 +724,7 @@ class MainFrame extends JFrame implements SerialPortListener {
             currentLedMode = receivedData[1];
             maxBright = receivedData[2];
             autoMode = receivedData[3];
-            thisdelay = receivedData[4];
+            delay = receivedData[4];
             for (int indx2 = 5; indx2 < 54; indx2++) {
                 ledModes[indx1] = receivedData[indx2];
                 indx1++;
@@ -773,8 +764,8 @@ class MainFrame extends JFrame implements SerialPortListener {
         int r = 0;
         int b = 0;
 
-        while (r != 240){
-            jtxStatus.setBackground(new Color(r, 240, b));
+        while (r != 238) {
+            jtxStatus.setBackground(new Color(r, 238, b));
             r++;
             b++;
             try {
@@ -845,6 +836,15 @@ class MainFrame extends JFrame implements SerialPortListener {
         }
     }
 
+    @Override
+    public void stateChanged(ChangeEvent e) {
+        Color newColor = colorChooser.getColor();
+        int r = newColor.getRed();
+        int g = newColor.getGreen();
+        int b = newColor.getBlue();
+        serialPortController.sendMessage(WS2812B.SET_COLOR, r, g, b);
+    }
+
     //SerialPort Events
     @Override
     public void onSerialPortConnected(String port, int baudRate) {
@@ -852,6 +852,8 @@ class MainFrame extends JFrame implements SerialPortListener {
         btConnect.setEnabled(false);
         combCom.setEnabled(false);
         combBaud.setEnabled(false);
+        serialPortController.sendMessage(WS2812B.CONNECT);
+        new InitialDataKeeper().start();
     }
 
     @Override
