@@ -325,7 +325,8 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
         brightness.setLabelTable(brightTable);
         brightness.setPaintLabels(true);
         brightness.setPreferredSize(new Dimension(160, 65));
-        brightness.addMouseListener(new BrightMouseListener());
+//        brightness.addMouseListener(new BrightMouseListener());
+        brightness.addChangeListener(new BrightnessChangeListener());
         speed.setMajorTickSpacing(5);
         speed.setMinorTickSpacing(1);
         speed.setPaintTicks(true);
@@ -472,27 +473,23 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
     }
 
     //Слушатель для слайдера яркости
-    private class BrightMouseListener implements MouseListener {
-        @Override
-        public void mouseEntered(MouseEvent e) {
-        }
+    private class BrightnessChangeListener implements ChangeListener {
+        long timePassed = 0;
+        long lastTimeCalled = System.currentTimeMillis();
+        int counter = 0;
+        int counter2 = 0;
 
         @Override
-        public void mouseClicked(MouseEvent e) {
-        }
+        public void stateChanged(ChangeEvent e) {
+            timePassed += System.currentTimeMillis() - lastTimeCalled;
+            lastTimeCalled = System.currentTimeMillis();
 
-        @Override
-        public void mouseReleased(MouseEvent e) {
-            maxBright = brightness.getValue();
-            serialPortController.sendMessage(WS2812B.SET_BRIGHT, maxBright);
-        }
-
-        @Override
-        public void mouseExited(MouseEvent e) {
-        }
-
-        @Override
-        public void mousePressed(MouseEvent e) {
+            if (timePassed > 10) {
+                System.out.println(++counter);
+                maxBright = brightness.getValue();
+                serialPortController.sendMessage(WS2812B.SET_BRIGHT, maxBright);
+                timePassed = 0L;
+            }
         }
     }
 
@@ -593,7 +590,7 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
         if (currentLedMode >= 50) {
             lblCurModeName.setText("Произвольный цвет");
             lblCurNumOfModes.setText("");
-        } else if (currentLedMode == 0){
+        } else if (currentLedMode == 0) {
             lblCurModeName.setText("Лента выключена!");
             lblCurNumOfModes.setText("");
         } else {
@@ -645,12 +642,12 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
     }
 
     //Метод, который обновляет ГПИ в соответствии с принятыми данными от ардуины
-    private void syncGUI(int... recivedData) throws ArrayIndexOutOfBoundsException {
+    private void syncGUI(int... receivedData) throws ArrayIndexOutOfBoundsException {
         jtxStatus.setBackground(Color.WHITE);
         try {
-            switch (recivedData[0]) {
+            switch (receivedData[0]) {
                 case WS2812B.ON_OFF:
-                    if (recivedData[1] == 0) {
+                    if (receivedData[1] == 0) {
                         jtxStatus.setText("Лента выключена!");
                         btOnOff.setSelected(false);
                         readyToSaveSet = false;
@@ -666,8 +663,8 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
 
                 case WS2812B.PREV:
                 case WS2812B.NEXT:
-                    currentLedMode = recivedData[1];
-                    delay = recivedData[2];
+                    currentLedMode = receivedData[1];
+                    delay = receivedData[2];
                     lblCurModeName.setText(WS2812B.modeNames[currentLedMode - 1]);
                     lblCurNumOfModes.setText(currentLedMode + "/" + modesCount);
                     //chkModesList[currentLedMode - 1].setBackground(Color.GREEN);
@@ -689,7 +686,7 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
                     break;
 
                 case WS2812B.PAUSE:
-                    if (recivedData[1] == 1) {
+                    if (receivedData[1] == 1) {
                         jtxStatus.setText("Пауза");
                         brightness.setEnabled(false);
                         speed.setEnabled(false);
@@ -711,14 +708,14 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
                 case WS2812B.ACT_DEACT_MODE:
                     boolean actDeactResult;
 
-                    actDeactResult = recivedData[2] == 1;
-                    jtxStatus.setText("Режим " + WS2812B.modeNames[recivedData[1]] + "(" + recivedData[1] + ") " + "Установлен в значение - " + actDeactResult);
+                    actDeactResult = receivedData[2] == 1;
+                    jtxStatus.setText("Режим " + WS2812B.modeNames[receivedData[1]] + "(" + receivedData[1] + ") " + "Установлен в значение - " + actDeactResult);
 
                     readyToSaveSet = true;
                     break;
 
                 case WS2812B.SET_AUTO:
-                    if (recivedData[1] == 1) {
+                    if (receivedData[1] == 1) {
                         jtxStatus.setText("Авторежим включен!");
                     } else {
                         jtxStatus.setText("Авторежим выключен!");
@@ -731,26 +728,26 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
                     lblCurModeName.setText("Произвольный цвет");
                     lblCurNumOfModes.setText("");
                     speed.setEnabled(false);
-                    jtxStatus.setText("Цвет ленты установлен в R: " + recivedData[1] + ", G: " + recivedData[2] + ", B: " + recivedData[3]);
+                    jtxStatus.setText("Цвет ленты установлен в R: " + receivedData[1] + ", G: " + receivedData[2] + ", B: " + receivedData[3]);
                     // chkModesList[prevLedMode - 1].setBackground(new Color(235, 235 ,235));
                     chkModesList[prevLedMode - 1].setForeground(colorsCheckBoxesInactive);
                     break;
 
                 case WS2812B.SET_BRIGHT:
-                    maxBright = recivedData[1];
+                    maxBright = receivedData[1];
                     brightness.setValue(maxBright);
                     jtxStatus.setText("Яркость установлена в значение " + maxBright + " единиц");
                     readyToSaveSet = true;
                     break;
 
                 case WS2812B.SET_SPEED:
-                    if (recivedData[1] > 0) {
-                        jtxStatus.setText("Скорость режима " + WS2812B.modeNames[currentLedMode - 1] + "(" + currentLedMode + ") " + "установлена в значение - " + recivedData[1]);
+                    if (receivedData[1] > 0) {
+                        jtxStatus.setText("Скорость режима " + WS2812B.modeNames[currentLedMode - 1] + "(" + currentLedMode + ") " + "установлена в значение - " + receivedData[1]);
                     }
                     break;
 
                 case WS2812B.SAVE_SETTINGS:
-                    if (recivedData[1] > 0) {
+                    if (receivedData[1] > 0) {
                         readyToSaveSet = false;
                         jtxStatus.setText("Данные сохранены!");
                     }
@@ -834,6 +831,7 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
         }
     }
 
+    //Color Changed Event
     @Override
     public void stateChanged(ChangeEvent e) {
         Color newColor = colorChooser.getColor();
