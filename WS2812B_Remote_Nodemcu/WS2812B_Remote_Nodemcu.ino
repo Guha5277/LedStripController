@@ -376,6 +376,7 @@ void onOff() {
   }
   else {
     if (ledModel == 50) {
+      ledMode = ledModel;
       one_color_all(r, g, b);
       LEDS.show();
     }
