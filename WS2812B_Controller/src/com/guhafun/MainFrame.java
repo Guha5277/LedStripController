@@ -3,122 +3,118 @@ package com.guhafun;
 import jssc.SerialPortList;
 
 import javax.swing.*;
-import javax.swing.colorchooser.AbstractColorChooserPanel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Hashtable;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 
-public class MainFrame {
 
-    //Константы - комманды
-    final private int CONNECT = 1;
-    final private int ON_OFF = 2;
-    final private int PREV = 3;
-    final private int NEXT = 4;
-    final private int PAUSE = 5;
-    final private int FAV = 6;
-    final private int ACT_DEACT_MODE = 7;
-    final private int SET_AUTO = 8;
-    final private int SET_COLOR = 9;
-    final private int SET_BRIGHT = 10;
-    final private int SET_SPEED = 11;
-    final private int SAVE_SETTINGS = 12;
+/*TODO
+ * 3. Рефакторинг кода, перенос на новый тип взаимодействия ГИ и класса работающего с портом (реалзиация интерфейса)*/
+class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
+    private final SerialPortController serialPortController;
+    private final CombComMouseListener comMouseListener;
 
-    //Флаг для готовности изменения списка режимов
-    private boolean readyActDeactMode = false;
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new MainFrame("WS2812B Controller"));
+    }
 
-    //Флаг наличия данных для сохранения
-    private boolean readyToSaveSet = false;
+    private boolean isInitialDataReceived = false;
+    private boolean readyToSaveSet = false;     //Флаг наличия изменений, для сохрания
+    private int currentLedMode = 0;             //Номер текущего режима
+    private int prevLedMode = 1;                //Номер предыдущего режима
+    private int[] ledModes = new int[49];       //Список активных режимов
+    private int maxBright = 0;                  //Максимальная яркость
+    private int autoMode = 0;                   //Состояние авторежима (0 - выключен, 1 - включен)
+    private int delay = 0;                  //Значение задержки между итерациями эффектов (увеличивая это значение визуально изменить скорость воспроизведения, при уменьшении - наоборот)
+    private int modesCount = WS2812B.modeNames.length; //общее количество режимов
 
-    //Локальные копиии переменных со значениями, используемыми в ардуино
-    private int ledMode = 0;                //Номер текущего режима
-    private int[] ledModes = new int[49];   //Список активных режимов
-    private int maxBright = 0;              //Максимальная яркость
-    private int autoMode = 0;               //Состояние авторежима (0 - выключен, 1 - включен)
-    private int thisdelay = 0;              //Значение задержки между итерациями эффектов (увеличивая это значение визуально изменить скорость воспроизведения, при уменьшении - наоборот)
+    //Элементы графического интерфейса
+    private JComboBox<String> combCom;       //Выпадающий список доступных COM-портов
+    private JComboBox<Integer> combBaud;     //Выпадающий список доступной скорости подключения
+    private JButton btConnect;               //Кнопка "Поключить"
+    private JButton btDisconnect;            //Кнопка "Отключить"
+    private JToggleButton btOnOff;           //Кнопка ВКЛ/ВЫКЛ ленты
+    private JLabel lblCurModeName;           //Тектовый лейбл с именем текущего режима
+    private JLabel lblCurNumOfModes;         //Текстовый лейбл с порядковым номером текущего режима
+    private JButton btPrev;                  //Кнопка "Предыдущий" режим
+    private JButton btPause;                 //Кнопка "Пауза"
+    private JButton btNext;                  //Кнопка "Следующий" режим
+    private JButton btAddToFav;              //Кнопка "Favorite" - для добавления режима в роли стартового
+    private JButton btSaveSettings;          //Кнопка "Сохранить" - для сохранения настроек в EEPROM (ПЗУ) арудино
+    private CustomCheckBox[] chkModesList;        //Список режимов
+    private ItemsChangeListener itemsChangeListener;
+    private Box box;                         //Менеджер расположения графических элементов
+    private JScrollPane scrollPane;          //Панель прокрутки
+    private JCheckBox chkAutoMode;           //Чекбокс для ВКЛ/ВЫКЛ автоматической смены режима
+    private JButton btColorChooser;          //Кнопка для вывода произвольного цвета на экран
+    private JLabel lblBright;                //Лейбл "Яркость"
+    private JLabel lblSpeed;                 //Лейбл "Скорость"
+    private JSlider brightness;              //Слайдер "Яркость"
+    private JSlider speed;                   //Слайдер "Скорость"
+    private JTextArea jtxStatus;             //Текстовое поле с системной информацией
 
-    //Строковый массив данных, содержащий названия режимов ленты.
-    private String[] modeNames = {"Rainbow Fade", "Rainbow Loop", "Random Burst", "Color Bounce", "Color Bounce Fade", "EMS Light One",
-            "EMS Light ALL", "Flicker", "Pulse One Color", "Pulse with change color", "Fade Vertical", "Rule 30",
-            "Random March", "RWB March", "Radiation", "Color Loop Verdelay", "White Temps", "Sin Bright Wave",
-            "Pop Horizontal", "Quad Bright Cirve", "Flame", "Rainbow Vertical", "Pacman", "Random Color Pop",
-            "EMS Lights Strobe", "RGB Propeller", "Kitt", "Matrix", "NEW! Rainbow Loop", "Color Wipe",
-            "Cylon Bounce", "Fire", "Rainbow Cycle", "Twinkle Random", "Running Lights", "Sparkle",
-            "Snow Sparkle", "Theater Chase", "Theater Chase Rainbow", "Strobe", "Bouncing Ball", "Bouncing Colored Ball",
-            "Red", "Green", "Blue", "Yellow", "Cyan", "Purple", "White"};
+    private Color colorsCheckBoxesActive = Color.red;
+    private Color colorsCheckBoxesInactive = Color.BLACK;
 
-    //Переменная со значением количества режимов
-    private int modesCount = modeNames.length;
+    private JFrame colorChooserFrame;
+    private JColorChooser colorChooser;      //Сдандарная панель выбора цвета
 
-    //Массив для работы с данными слайдера скорости - количество элементов массива эквивалентно количеству делений слайдера
-    private double[] hashSpeed = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0};
+    private MainFrame(String frameTitle) {
+        super(frameTitle);
+        serialPortController = new SerialPortController(this);
+        comMouseListener = new CombComMouseListener();
+        createUI();
+        setupUI();
+    }
 
-    //Массив чекбоксов (эквивалентный modeNamse)
-    private JCheckBox[] chkModesList = new JCheckBox[modeNames.length];
+    private void createUI() {
+        chkModesList = new CustomCheckBox[WS2812B.modeNames.length];
+        btConnect = new JButton("Подключиться");
+        btDisconnect = new JButton("Отключиться");
+        btOnOff = new JToggleButton();
+        lblCurModeName = new JLabel(WS2812B.modeNames[0]);
+        lblCurNumOfModes = new JLabel("1/" + modesCount);
+        btPrev = new JButton();
+        btPause = new JButton();
+        btNext = new JButton();
+        btAddToFav = new JButton();
+        btSaveSettings = new JButton();
+        box = Box.createVerticalBox();
+        scrollPane = new JScrollPane(box);
+        chkAutoMode = new JCheckBox("Авто");
+        btColorChooser = new JButton("Цвет");
+        lblBright = new JLabel("Яркость");
+        lblSpeed = new JLabel("Скорость");
+        brightness = new JSlider(JSlider.HORIZONTAL, 1, 255, 255);
+        speed = new JSlider(JSlider.HORIZONTAL, 0, 15, 5);
+        jtxStatus = new JTextArea();
+        colorChooserFrame = new JFrame();
+        colorChooser = new JColorChooser(new Color(0, 0, 0));
+        itemsChangeListener = new ItemsChangeListener();
+    }
 
-    //Массив содержащий доступные COM-порты и список скоростей подключения к ленте
-    private Integer[] baudRate = {600, 1200, 2400, 4800, 9600, 19200, 28800, 38400, 57600, 115200};
-
-    //Создаём компоненты в порядке их прорисовки - слева-направо, сверху-вниз
-    private JComboBox<String> combCom;                                          //Выпадающий список доступных COM-портов
-    private JComboBox<Integer> combBaud = new JComboBox<>(baudRate);            //Выпадающий список доступной скорости подключения
-    private JButton btConnect = new JButton("Подключиться");              //Кнопка "Поключить"
-    private JButton btDisconnect = new JButton("Отключиться");            //Кнопка "Отключить"
-
-    private JToggleButton btOnOff = new JToggleButton();                       //Кнопка ВКЛ/ВЫКЛ ленты
-    private JLabel lblCurModeName = new JLabel("Quad Bright Cirve");      //Тектовый лейбл с именем текущего режима
-    private JLabel lblCurNumOfModes = new JLabel("1/" + modesCount);      //Текстовый лейбл с порядковым номером текущего режима
-    private JButton btPrev = new JButton();                                 //Кнопка "Предыдущий" режим
-    private JButton btPause = new JButton();                                //Кнопка "Пауза"
-    private JButton btNext = new JButton();                                 //Кнопка "Следующий" режим
-    private JButton btAddToFav = new JButton();                             //Кнопка "Favorite" - для добавления режима в роли стартового
-    private JButton btSaveSettings = new JButton();                         //Кнопка "Сохранить" - для сохранения настроек в EEPROM (ПЗУ) арудино
-
-    private Box box = Box.createVerticalBox();                                        //Менеджер компоновки "коробка"
-    private JScrollPane scrollPane = new JScrollPane(box);                            //Панель прокрутки
-
-    private JCheckBox chkAutoMode = new JCheckBox("Авто");                                     //Чекбокс для ВКЛ/ВЫКЛ автоматической смены режима
-    private JButton btColorChooser = new JButton("Цвет");                                      //Кнопка для вывода произвольного цвета на экран
-    private JLabel lblBright = new JLabel("Яркость");                                          //Лейбл "Яркость"
-    private JLabel lblSpeed = new JLabel("Скорость");                                          //Лейбл "Скорость"
-    private JSlider brightness = new JSlider(JSlider.HORIZONTAL, 1, 255, 255);     //Слайдер "Яркость"
-    private JSlider speed = new JSlider(JSlider.HORIZONTAL, 0, 15, 5);             //Слайдер "Скорость"
-
-    private JTextArea jtxStatus = new JTextArea();                                                 //Текстовое поле с системной информацией
-    private JColorChooser colorChooser = new JColorChooser();                                      //Сдандарная панель выбора цвета
-    AbstractColorChooserPanel colorPanels[] = colorChooser.getChooserPanels();
-
-    MainFrame() {
+    private void setupUI() {
         //Получаем список портов, добавляем его в выпадающий список
-        String[] comPorts;
-        comPorts = SerialPortList.getPortNames();
+        String[] comPorts = SerialPortList.getPortNames();
         combCom = new JComboBox<>(comPorts);
-        combCom.setSelectedIndex(comPorts.length-1);
+        combCom.setSelectedIndex(comPorts.length - 1);
+        combBaud = new JComboBox<>(serialPortController.getBaudRateList());
+        combBaud.setSelectedIndex(9);
+        this.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-        //Создаём и настраиваем главное окно
-        JFrame frame = new JFrame("WS2812B Controller");
-        frame.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-/***********************************ВЕРХНАЯЯ ПАНЕЛЬ ПОДКЛЮЧЕНИЯ****************************************************************/
+        //ВЕРХНАЯЯ ПАНЕЛЬ ПОДКЛЮЧЕНИЯ
         //Создаём верхнюю панель (для элементов подключения-отключения), задаём панели новый менеджер компоновки элементов
         JPanel connectPan = new JPanel();
         connectPan.setLayout(new GridBagLayout());
-
-        /*Настраиваем стили для наших элементов. Параметры, проинимаемые конструктором GridBagConstraints:
-         *gridx - номер ячейки расположения компонента по оси X (отсчёт идёт с левого верхнего угла, RELATIVE - означает положение предыдущего + 1);
-         *gridy - номер ячейки расположения компонента по оси Y
-         * gridwidth - количество ячеек, занимаемых элементом по вертикали
-         * gridheidth - количество ячеек, занимаемых элементов по горизонтали
-         * weightx, weighty - "вес" элемента - чем больше число(от 0.0 до 1.0), тем больше свободного места займёт элемент
-         * anchor - вырванивание внутри ячейки
-         * Insets - отступы
-         * ipadx - растягивание элемента по выосте
-         * ipady - растягивание элемента по ширине         */
-        GridBagConstraints contConnect1 = new GridBagConstraints(GridBagConstraints.RELATIVE, 0, 1, 1, 0, 0, GridBagConstraints.WEST, 0, new Insets(10, 20, 10, 0), 0, 0);
-        GridBagConstraints contConnect2 = new GridBagConstraints(GridBagConstraints.RELATIVE, 0, 1, 1, 0, 0, GridBagConstraints.WEST, 0, new Insets(10, 15, 10, 0), 0, 0);
+        GridBagConstraints contConnect1 = new GridBagConstraints(GridBagConstraints.RELATIVE,
+                0, 1, 1, 0, 0, GridBagConstraints.WEST,
+                0, new Insets(10, 20, 10, 0), 0, 0);
+        GridBagConstraints contConnect2 = new GridBagConstraints(GridBagConstraints.RELATIVE,
+                0, 1, 1, 0, 0, GridBagConstraints.WEST,
+                0, new Insets(10, 15, 10, 0), 0, 0);
 
         //Задаём размеры компонентов
         combCom.setPreferredSize(new Dimension(80, 25));
@@ -127,36 +123,43 @@ public class MainFrame {
         btDisconnect.setPreferredSize(new Dimension(90, 25));
 
         //Задаём внутренние отступы у кнопки, чтобы сделать её меньше
-    //    btRefresh.setMargin(new Insets(0, 0, 0, 0));
+        //    btRefresh.setMargin(new Insets(0, 0, 0, 0));
         btConnect.setMargin(new Insets(5, 2, 5, 2));
         btDisconnect.setMargin(new Insets(5, 2, 5, 2));
 
         //Отключаем прорисовку фокуса у кнопок
-     //   btRefresh.setFocusPainted(false);
         btConnect.setFocusPainted(false);
         btDisconnect.setFocusPainted(false);
-
-        //Задаём выбранный элемент у раскрывающегося списка (сделал для себя, чтобы каждый раз не выбирать необходимую скорость)
-        combBaud.setSelectedIndex(9);
 
         //Меняем цвет кнопки отключения и делаем её неактивной
         btDisconnect.setBackground(Color.pink);
         btDisconnect.setEnabled(false);
 
+        //Задаём команды для кнопок
+        btConnect.setActionCommand("connect");
+        btDisconnect.setActionCommand("disconnect");
+        btOnOff.setActionCommand("onoff");
+        btPrev.setActionCommand("prev");
+        btPause.setActionCommand("pause");
+        btNext.setActionCommand("next");
+        btAddToFav.setActionCommand("fav");
+        btSaveSettings.setActionCommand("saveset");
+        btColorChooser.setActionCommand("color");
+
         //Добавялем слушателей для кнопок
-        combCom.addMouseListener(new CombComMouseListener());
-        btConnect.addActionListener(new ButtonConnectListener());
-        btDisconnect.addActionListener(new ButtonDisconnectListener());
+        combCom.addMouseListener(comMouseListener);
+        ButtonsListener buttonsListener = new ButtonsListener();
+        btConnect.addActionListener(buttonsListener);
+        btDisconnect.addActionListener(buttonsListener);
 
         //Добавляем компоненты на панель
-     //   connectPan.add(btRefresh, contConnect1);
+        //   connectPan.add(btRefresh, contConnect1);
         connectPan.add(combCom, contConnect1);
         connectPan.add(combBaud, contConnect2);
         connectPan.add(btConnect, contConnect1);
         connectPan.add(btDisconnect, contConnect2);
 
-
-/******************************ПАНЕЛЬ ЭЛЕМЕНТОВ УПРАВЛЕНИЯ******************************************************************/
+        //ПАНЕЛЬ ЭЛЕМЕНТОВ УПРАВЛЕНИЯ
         //Создаём две панели и добавляем им менедждеры компонновки, задаём размеры панели - две панели нужны, чтобы при изменении названия режима (а у них разные размеры строки) не скакали элементы управления  - "вперёд", "назад" и т.д.
         JPanel mainControlPan = new JPanel();
         JPanel mainControlPan2 = new JPanel();
@@ -169,12 +172,12 @@ public class MainFrame {
         mainControlPan2.setPreferredSize(new Dimension(174, 60));
 
         //Задаём размеры кнопки ВКЛ/ВЫКЛ, добавляем слушателя
-        btOnOff.addActionListener(new ButtonOnOffListener());
-        btPrev.addActionListener(new ButtonPrevListener());
-        btPause.addActionListener(new ButtonPauseListener());
-        btNext.addActionListener(new ButtonNextListener());
-        btAddToFav.addActionListener(new ButtonFavoriteListener());
-        btSaveSettings.addActionListener(new ButtonSaveSetListener());
+        btOnOff.addActionListener(buttonsListener);
+        btPrev.addActionListener(buttonsListener);
+        btPause.addActionListener(buttonsListener);
+        btNext.addActionListener(buttonsListener);
+        btAddToFav.addActionListener(buttonsListener);
+        btSaveSettings.addActionListener(buttonsListener);
 
         //Отключаем прорисовку рамки у кнопок
         btOnOff.setBorderPainted(false);
@@ -219,8 +222,6 @@ public class MainFrame {
         //Подготавливаем и добавляем иконки для переключателя ВКЛ/ВЫКЛ
         btOnOff.setBorder(null);
         btOnOff.setContentAreaFilled(false);
-
-
         btOnOff.setIcon(icOff);
         btOnOff.setSelectedIcon(icOn);
 
@@ -276,12 +277,12 @@ public class MainFrame {
         mainControlPan2.add(Box.createHorizontalStrut(2));
         mainControlPan2.add(btSaveSettings);
 
-/**************************Центральная панель**********************************************************************/
+        //ЦЕНТРАЛЬНАЯ ПАНЕЛЬ
         //Инициализируем чекбоксы, добавляя в качестве параметра строки с названиями режимов, тутже добавляем чекбоксы в менеджер компоновки "коробка"
         for (byte i = 0; i < chkModesList.length; i++) {
-            chkModesList[i] = new JCheckBox(modeNames[i]);
+            chkModesList[i] = new CustomCheckBox(i, WS2812B.modeNames[i]);
             chkModesList[i].setFocusPainted(false);
-            chkModesList[i].addItemListener(new ModesListItemListener(i));
+            //chkModesList[i].addItemListener(new ModesListItemListener(i));
             box.add(chkModesList[i]);
         }
 
@@ -289,8 +290,7 @@ public class MainFrame {
         scrollPane.setPreferredSize(new Dimension(435, 400));
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-
-/*****************************НИЖНЯЯ ПАНЕЛЬ**************************************************************/
+        //НИЖНЯЯ ПАНЕЛЬ
         //Создаём хэш-таблицу для слайдеров, чтобы сделать их более информативными
         Hashtable<Integer, Component> speedTable = new Hashtable<>();
         speedTable.put(0, new JLabel("0.5x"));
@@ -313,11 +313,10 @@ public class MainFrame {
         GridBagConstraints contSettings2 = new GridBagConstraints(0, 1, 1, 1, 0, 0, GridBagConstraints.CENTER, 0, new Insets(-5, 5, 0, 5), 0, 0);
         GridBagConstraints contSettings3 = new GridBagConstraints(GridBagConstraints.RELATIVE, 0, 2, 1, 0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 0, 0, 0), 0, 0);
         GridBagConstraints contSettings4 = new GridBagConstraints(GridBagConstraints.RELATIVE, 1, 2, 1, 0, 0, GridBagConstraints.CENTER, 0, new Insets(-8, 10, 0, 8), 0, 0);
-
         chkAutoMode.addItemListener(new AutoModeItemListener());
         btColorChooser.setForeground(Color.WHITE);
         btColorChooser.setBackground(Color.BLACK);
-        btColorChooser.addActionListener(new ButtonColorListener());
+        btColorChooser.addActionListener(buttonsListener);
 
         //Настраиваем слайдеры ("Главные" шкалы деления и второстепенные, их отображение, задаём хэш-таблицу для прорисовки отдельных значений и её отображение, задаём размеры)
         brightness.setMajorTickSpacing(63);
@@ -327,7 +326,6 @@ public class MainFrame {
         brightness.setPaintLabels(true);
         brightness.setPreferredSize(new Dimension(160, 65));
         brightness.addMouseListener(new BrightMouseListener());
-
         speed.setMajorTickSpacing(5);
         speed.setMinorTickSpacing(1);
         speed.setPaintTicks(true);
@@ -337,7 +335,6 @@ public class MainFrame {
         speed.setPreferredSize(new Dimension(160, 65));
         speed.addMouseListener(new SpeedMouseListener());
 
-
         //Добавляем компоненты на панель
         setUpPanel.add(chkAutoMode, contSettings1);
         setUpPanel.add(btColorChooser, contSettings2);
@@ -345,337 +342,320 @@ public class MainFrame {
         setUpPanel.add(lblSpeed, contSettings3);
         setUpPanel.add(brightness, contSettings4);
         setUpPanel.add(speed, contSettings4);
-
         jtxStatus.setPreferredSize(new Dimension(450, 20));
         jtxStatus.setEditable(false);
 
-/*********Настраиваем главное окно, добавляем компоненты и выводим всё на экран*******/
-        disableAll();
-        frame.setSize(450, 650);
-        frame.add(connectPan);
-        frame.add(mainControlPan);
-        frame.add(mainControlPan2);
-        frame.add(scrollPane);
-        frame.add(setUpPanel);
-        frame.add(jtxStatus);
-        frame.setResizable(false);
-        frame.setVisible(true);
+        //Настройка панели выбора произвольного цвета
+        JPanel colorChooserPanel = new JPanel();
+        colorChooserPanel.add(colorChooser);
+        colorChooserFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        colorChooserFrame.add(colorChooserPanel);
+        colorChooser.removeChooserPanel(colorChooser.getChooserPanels()[0]);
+        colorChooser.getSelectionModel().addChangeListener(this);
 
+        //Настройка главного окна
+        disableAll(true);
+        int frameHeight = 650;
+        int frameWidth = 450;
+        this.setSize(frameWidth, frameHeight);
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        double screenHeight = screenSize.getHeight();
+        double screenWidth = screenSize.getWidth();
+        this.setLocation((int) screenWidth / 2 - frameWidth / 2, (int) screenHeight / 2 - frameHeight / 2);
+        this.add(connectPan);
+        this.add(mainControlPan);
+        this.add(mainControlPan2);
+        this.add(scrollPane);
+        this.add(setUpPanel);
+        this.add(jtxStatus);
+        jtxStatus.setBackground(new Color(238, 238, 238));
+        this.setResizable(false);
+        this.setVisible(true);
     }
 
-   //Слушатель для выпадающего списка COM-порртов
-    private class CombComMouseListener implements MouseListener{
+    //Слушатель для выпадающего списка COM-порртов
+    private class CombComMouseListener implements MouseListener {
         @Override
-        public void mouseClicked(MouseEvent e){}
+        public void mouseClicked(MouseEvent e) {
+        }
+
         @Override
         public void mouseEntered(MouseEvent e) {
             //Обновляем список доступных COM-портов для подключения
-            if (!Main.isConnected) {
-                int lastSelectedIndex;
-                String[] comPorts;
+            int lastSelectedIndex;
+            String[] comPorts;
 
-                lastSelectedIndex = combCom.getSelectedIndex();
-                combCom.removeAllItems();
+            lastSelectedIndex = combCom.getSelectedIndex();
+            combCom.removeAllItems();
 
-                comPorts = SerialPortList.getPortNames();
-                for (String s : comPorts) {
-                    combCom.addItem(s);
-                }
-               if(lastSelectedIndex <= comPorts.length - 1) {
-                  combCom.setSelectedIndex(lastSelectedIndex);
-               }
+            comPorts = SerialPortList.getPortNames();
+            for (String s : comPorts) {
+                combCom.addItem(s);
             }
-
-        }
-        @Override
-        public void mouseReleased(MouseEvent e){}
-        @Override
-        public void mouseExited(MouseEvent e) {}
-        @Override
-        public void mousePressed(MouseEvent e) {}
-    }
-
-    //Слушатель кнопки подключения
-    private class ButtonConnectListener implements ActionListener {
-        public void actionPerformed(ActionEvent e) throws NullPointerException {
-
-            btConnect.setEnabled(false);
-            combCom.setEnabled(false);
-            combBaud.setEnabled(false);
-
-            try {
-                Main.openPort(combCom.getSelectedItem().toString(), (Integer) combBaud.getSelectedItem());
-            } catch (NullPointerException ne) {
-                ne.printStackTrace();
+            if (lastSelectedIndex <= comPorts.length - 1) {
+                combCom.setSelectedIndex(lastSelectedIndex);
+            } else {
+                combCom.setSelectedIndex(comPorts.length - 1);
             }
-            System.out.println(Main.com + " " + Main.baudRate);
+        }
 
-            //Поток подключения в котором проихсодит попытка установить соединение
-            TryToConnect ttc = new TryToConnect();
-            ttc.execute();
+        @Override
+        public void mouseReleased(MouseEvent e) {
+        }
 
-            //Запускаем фоновый поток, отслеживающий приходящие данные и изменяющий, в соответствии с ними, ГПИ
-            new UIUpdater().execute();
+        @Override
+        public void mouseExited(MouseEvent e) {
+        }
 
+        @Override
+        public void mousePressed(MouseEvent e) {
         }
     }
 
-    //Слушатель кнопки отключения
-    private class ButtonDisconnectListener implements ActionListener {
+    //Общий слушатель для кнопок
+    private class ButtonsListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            Main.disconnect();
-            disableAll();
+            String code = e.getActionCommand();
+            switch (code) {
+                case "connect":
+                    if (combCom.getSelectedItem() == null) {
+                        JOptionPane.showMessageDialog(MainFrame.this, "Нет доступных устройств для подключения!\nПроверьте правильность подключения и повторите попытку", "Ошибка!", JOptionPane.WARNING_MESSAGE);
+                    } else {
+                        btConnect.setEnabled(false);
+                        combCom.setEnabled(false);
+                        combBaud.setEnabled(false);
+                        serialPortController.connect(combCom.getSelectedItem().toString(), (Integer) combBaud.getSelectedItem());
+                    }
+                    break;
+                case "disconnect":
+                    serialPortController.disconnect();
+                    break;
+                case "onoff":
+                    serialPortController.sendMessage(WS2812B.ON_OFF);
+                    break;
+                case "prev":
+                    serialPortController.sendMessage(WS2812B.PREV);
+                    break;
+                case "pause":
+                    serialPortController.sendMessage(WS2812B.PAUSE);
+                    break;
+                case "next":
+                    serialPortController.sendMessage(WS2812B.NEXT);
+                    break;
+                case "fav":
+                    serialPortController.sendMessage(WS2812B.FAV, currentLedMode);
+                    break;
+                case "saveset":
+                    serialPortController.sendMessage(WS2812B.SAVE_SETTINGS);
+                    break;
+                case "color":
+                    int x = MainFrame.this.getX();
+                    int y = MainFrame.this.getY();
+                    colorChooserFrame.setLocation(x - 85, y + 150);
+                    colorChooserFrame.pack();
+                    colorChooserFrame.setVisible(true);
+                    break;
+            }
         }
     }
 
-    //Слушатель кнопки ВКЛ/ВЫКЛ
-    private class ButtonOnOffListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-
-            Main.sendData(ON_OFF);
-        }
-}
-
-    //Слушатель для кнопки "Назад"
-    private class ButtonPrevListener implements ActionListener{
-        @Override
-        public void actionPerformed(ActionEvent e) {
-
-
-            Main.sendData(PREV);
-        }
-    }
-
-    //Слушатель для кнопки "Пауза"
-    private class ButtonPauseListener implements ActionListener{
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            Main.sendData(PAUSE);
-        }
-    }
-
-    //Слушатель для кнопки "Вперёд"
-    private class ButtonNextListener implements ActionListener{
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            Main.sendData(NEXT);
-        }
-    }
-
-    //Слушатель для кнопки "Добавить в избранное"
-    private class ButtonFavoriteListener implements ActionListener{
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            Main.sendData(FAV, ledMode);
-        }
-    }
-
-    //Слушатель для кнопки "Сохранить настройки"
-    private class ButtonSaveSetListener implements ActionListener{
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            Main.sendData(SAVE_SETTINGS);
-        }
-    }
-
-    //Слушатель для изменения списка режимов
-    private class ModesListItemListener implements ItemListener{
-        //Переменная индекса чекбоса, значения активности режима (1 - добавить в список/активен, 0 - удалить из списка/деактивирован
-        byte index;
-        byte actDeactValue;
-
-        //Конструктор принимает в качестве параметра индекс чекбокса, который вызвал ивент, в зависимости от текущего состояния чекбокса формируется код для отправки
-        ModesListItemListener(byte index){
-            this.index = index;
-        }
-
+    //Слушатель чекбоксов режимов
+    private class ItemsChangeListener implements ItemListener {
         @Override
         public void itemStateChanged(ItemEvent e) {
-            if(readyActDeactMode) {
-                if (chkModesList[index].isSelected()) {
-                    actDeactValue = 1;
-                } else {
-                    actDeactValue = 0;
-                }
-                Main.sendData(ACT_DEACT_MODE, index, actDeactValue);
-                System.out.println("Режим " + modeNames[index] + "(" + index + ") " + "Установлен в значение - " + chkModesList[index].isSelected());
-            }
+            CustomCheckBox checkBox = (CustomCheckBox) e.getSource();
+            int index = checkBox.getIndex();
+            byte actDeactValue = chkModesList[index].isSelected() ? (byte) 1 : 0;
+            serialPortController.sendMessage(WS2812B.ACT_DEACT_MODE, index, actDeactValue);
         }
     }
 
-    //Слушатель для слайдера яркости(реализован через ивенты мыши)
-    private class BrightMouseListener implements MouseListener{
+    //Слушатель для слайдера яркости
+    private class BrightMouseListener implements MouseListener {
         @Override
-        public void mouseEntered(MouseEvent e) {        }
-        @Override
-        public void mouseClicked(MouseEvent e){        }
+        public void mouseEntered(MouseEvent e) {
+        }
 
         @Override
-        public void mouseReleased(MouseEvent e){
+        public void mouseClicked(MouseEvent e) {
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
             maxBright = brightness.getValue();
-            Main.sendData(SET_BRIGHT, maxBright);
+            serialPortController.sendMessage(WS2812B.SET_BRIGHT, maxBright);
         }
 
         @Override
-        public void mouseExited(MouseEvent e) {        }
+        public void mouseExited(MouseEvent e) {
+        }
+
         @Override
-        public void mousePressed(MouseEvent e) {        }
+        public void mousePressed(MouseEvent e) {
+        }
     }
 
-    //Слушатель для слайдера скорости(реализован через ивенты мыши)
-    private class SpeedMouseListener implements MouseListener{
+    //Слушатель для слайдера скорости
+    private class SpeedMouseListener implements MouseListener {
         @Override
-        public void mouseEntered(MouseEvent e) {        }
-        @Override
-        public void mouseClicked(MouseEvent e){        }
+        public void mouseEntered(MouseEvent e) {
+        }
 
         @Override
-        public void mouseReleased(MouseEvent e){
+        public void mouseClicked(MouseEvent e) {
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
             //Скорость регулируется путём изменения перменной задержки - чем меньше её значение, тем быстрее работает эффект
             //Считываем значение слайдера (0-15), каждое значение соответствует своей ячейке в массиве hashSpeed
             int arrayIndex = speed.getValue();
-            int thisdelayChanged = (int)(thisdelay/hashSpeed[arrayIndex]);
+            int thisdelayChanged = (int) (delay / WS2812B.speedMultiplier[arrayIndex]);
 
             System.out.println(thisdelayChanged);
-            Main.sendData(SET_SPEED, thisdelayChanged);
+            serialPortController.sendMessage(WS2812B.SET_SPEED, thisdelayChanged);
         }
 
         @Override
-        public void mouseExited(MouseEvent e) {        }
+        public void mouseExited(MouseEvent e) {
+        }
+
         @Override
-        public void mousePressed(MouseEvent e) {        }
+        public void mousePressed(MouseEvent e) {
+        }
     }
 
     //Слушаель для чекбокса "Авто"
-    private class AutoModeItemListener implements ItemListener{
+    private class AutoModeItemListener implements ItemListener {
         @Override
         public void itemStateChanged(ItemEvent e) {
             boolean currentState = chkAutoMode.isSelected();
             int value;
-            if (currentState){
+            if (currentState) {
                 value = 1;
-            }
-            else{
+            } else {
                 value = 0;
             }
-            Main.sendData(SET_AUTO, value);
+            serialPortController.sendMessage(WS2812B.SET_AUTO, value);
         }
     }
 
-    //Слушатель для кнопки "Цвет"
-    private class ButtonColorListener implements ActionListener{
+    //Поток получения инициализационных данных
+    private class InitialDataKeeper extends Thread {
+        int counter = 0;
+
         @Override
-        public void actionPerformed(ActionEvent e) {
-
-           Color initColor = btColorChooser.getBackground();
-           Color bg =  JColorChooser.showDialog(scrollPane, "Выберите цвет", initColor);
-           if (bg != null){
-               btColorChooser.setBackground(bg);
-
-               int r = bg.getRed();
-               int g = bg.getGreen();
-               int b = bg.getBlue();
-
-               Main.sendData(SET_COLOR, r, g, b);
-
-           }
-        }
-    }
-
-    //Фоновый поток для обновления данных GUI
-    private class UIUpdater extends SwingWorker<Void, Integer> {
-        @Override
-        protected Void doInBackground() {
-            while(Main.isConnected) {
-                if (Main.isRecponceRecived) {
-                    Main.isRecponceRecived = false;
-                    syncGUI(Main.returnRecivedData());
+        public void run() {
+            while (true) {
+                if (counter == 10) {
+                    failedToGetInitialData();
+                    return;
                 }
                 try {
-                    Thread.sleep(300);
-                } catch (Exception e) {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-
-                Main.connectCounter++;
-                if(Main.connectCounter == 16){
-                    Main.disconnect();
-                    disableAll();
-                }
+                if (isInitialDataReceived) return;
+                serialPortController.sendMessage(WS2812B.CONNECT);
+                counter++;
             }
-            return null;
         }
     }
 
-    //Отдельный поток для работы с подключением к клиенту
-    private class TryToConnect extends SwingWorker<Boolean, Integer>{
-        int i = 0;
-
-        @Override
-        public Boolean doInBackground() throws Exception {
-            Main.sendData(CONNECT);
-            Thread.sleep(200);
-            for (i = 1; i < 11; i++){
-                    publish(i);             //методом publish() можно передавать промежуточные результаты работы в метод process()
-                if (Main.isConnected){
-                    return true;
-                }
-
-                Main.sendData(CONNECT);
-                Thread.sleep(500);
-            }
-            return false;
-        }
-
-        //Этот метод нужен для отображения прогресса работы
-        @Override
-        protected void process(List<Integer> chunks) {
-           jtxStatus.setText("Попытка подключения №" + chunks.get(0));          //метод get(), в данном случае, возвращает то, что мы передали с помощью publish()
-           jtxStatus.setBackground(Color.WHITE);
-        }
-
-        //Вызывается по завершению работы (после завершения метода doInBackground())
-        @Override
-        protected void done() {
-           boolean result;
-           try{
-               result = this.get();   //спомощью метода get() можно узнать, какое значение было возвращено методом doInBackground()
-               if(result){
-
-                   initializeGUI(Main.returnRecivedData());
-               }
-               else {
-                   Main.disconnect();
-
-//                   combCom.setEnabled(true);
-//                   combBaud.setEnabled(true);
-//                   btConnect.setEnabled(true);
-
-                   jtxStatus.setText("Ошибка подключения!");
-                   jtxStatus.setBackground(Color.RED);
-               }
-
-           } catch(InterruptedException e) {
-            } catch(ExecutionException e) {
-            }
-
-            Main.clearData();
-    }
+    private void failedToGetInitialData() {
+        JOptionPane.showMessageDialog(this, "Не могу инициализировать данные!\nПроверьте правильность скетча и настройки подключения (скорость)!", "Ошибка", JOptionPane.ERROR_MESSAGE);
+        serialPortController.disconnect();
     }
 
-   //Метод, который обновляет ГПИ в соответствии с принятыми данными от ардуины
-    private void syncGUI(int... recivedData) throws ArrayIndexOutOfBoundsException{
+    //Инициализация ГПИ начальными значениями, полученными от дуины
+    private void initializeGUI(int[] receivedData) {
+        //Вывод системной информации
+        jtxStatus.setText("Подключено к " + combCom.getSelectedItem() + " на скорости " + combBaud.getSelectedItem());
+        jtxStatus.setBackground(Color.GREEN);
+
+        //Заполнение переменных полученными от ардуины данными
+        int indx1 = 0;
+        try {
+            currentLedMode = receivedData[1];
+            maxBright = receivedData[2];
+            autoMode = receivedData[3];
+            delay = receivedData[4];
+            for (int indx2 = 5; indx2 < 54; indx2++) {
+                ledModes[indx1] = receivedData[indx2];
+                indx1++;
+            }
+        } catch (ArrayIndexOutOfBoundsException ae) {
+            ae.printStackTrace();
+        }
+        //Обновление лейблов с именами режимов и порядковым номером
+        if (currentLedMode >= 50) {
+            lblCurModeName.setText("Произвольный цвет");
+            lblCurNumOfModes.setText("");
+        } else if (currentLedMode == 0){
+            lblCurModeName.setText("Лента выключена!");
+            lblCurNumOfModes.setText("");
+        } else {
+//            chkModesList[currentLedMode - 1].setBackground(Color.GREEN);
+            chkModesList[currentLedMode - 1].setForeground(colorsCheckBoxesActive);
+            prevLedMode = currentLedMode;
+            lblCurModeName.setText(WS2812B.modeNames[currentLedMode - 1]);
+            lblCurNumOfModes.setText(currentLedMode + "/" + modesCount);
+        }
+
+        //Установка галочки для режима "Авто" если этот режим включён в Ардуино
+        if (autoMode == 1) {
+            chkAutoMode.setSelected(true);
+        }
+
+        //Установка значения яркости
+        brightness.setValue(maxBright);
+
+        //Установление флагов активированных/деактивированных режимов в общем плейлисте
+        for (int i = 0; i < modesCount; i++) {
+            if (ledModes[i] == 1) {
+                chkModesList[i].setSelected(true);
+//                chkModesList[i].addItemListener(new ModesListItemListener((byte)i));
+            }
+        }
+
+        //Применение настроек - установка состояния интерфейса в зависимости от состояния ленты
+        if (currentLedMode > 0) {
+            btOnOff.setSelected(true);
+            enableAll();
+        } else {
+            btOnOff.setSelected(false);
+            disableAll(false);
+        }
+
+        //Установка флага готовности к изменению основного списка режимов
+        int r = 0;
+        int b = 0;
+        while (r != 238) {
+            jtxStatus.setBackground(new Color(r, 238, b));
+            r++;
+            b++;
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    //Метод, который обновляет ГПИ в соответствии с принятыми данными от ардуины
+    private void syncGUI(int... recivedData) throws ArrayIndexOutOfBoundsException {
         jtxStatus.setBackground(Color.WHITE);
         try {
             switch (recivedData[0]) {
-                case ON_OFF:
+                case WS2812B.ON_OFF:
                     if (recivedData[1] == 0) {
                         jtxStatus.setText("Лента выключена!");
                         btOnOff.setSelected(false);
                         readyToSaveSet = false;
-                        disableAll();
+                        disableAll(false);
+                        btOnOff.setEnabled(true);
                     } else {
                         jtxStatus.setText("Лента включена!");
                         btOnOff.setSelected(true);
@@ -684,14 +664,19 @@ public class MainFrame {
                     }
                     break;
 
-                case PREV:
-                case NEXT:
-                    ledMode = recivedData[1];
-                    thisdelay = recivedData[2];
-                    lblCurModeName.setText(modeNames[ledMode - 1]);
-                    lblCurNumOfModes.setText(ledMode + "/" + modesCount);
+                case WS2812B.PREV:
+                case WS2812B.NEXT:
+                    currentLedMode = recivedData[1];
+                    delay = recivedData[2];
+                    lblCurModeName.setText(WS2812B.modeNames[currentLedMode - 1]);
+                    lblCurNumOfModes.setText(currentLedMode + "/" + modesCount);
+                    //chkModesList[currentLedMode - 1].setBackground(Color.GREEN);
+                    chkModesList[currentLedMode - 1].setForeground(colorsCheckBoxesActive);
+//                    chkModesList[prevLedMode - 1].setBackground(new Color(235, 235, 235));
+                    chkModesList[prevLedMode - 1].setForeground(colorsCheckBoxesInactive);
+                    prevLedMode = currentLedMode;
 
-                    if (thisdelay == 0) {
+                    if (delay == 0) {
                         speed.setEnabled(false);
                     } else {
                         speed.setEnabled(true);
@@ -700,17 +685,17 @@ public class MainFrame {
 
                     readyToSaveSet = true;
 
-                    jtxStatus.setText("Режим № " + ledMode + " - " + modeNames[ledMode - 1]);
+                    jtxStatus.setText("Режим № " + currentLedMode + " - " + WS2812B.modeNames[currentLedMode - 1]);
                     break;
 
-                case PAUSE:
+                case WS2812B.PAUSE:
                     if (recivedData[1] == 1) {
                         jtxStatus.setText("Пауза");
                         brightness.setEnabled(false);
                         speed.setEnabled(false);
                     } else {
-                        jtxStatus.setText("Текущий режим " + ledMode);
-                        if (thisdelay == 0) {
+                        jtxStatus.setText("Текущий режим " + currentLedMode);
+                        if (delay == 0) {
                             speed.setEnabled(false);
                         } else {
                             speed.setEnabled(true);
@@ -719,128 +704,72 @@ public class MainFrame {
                     }
                     break;
 
-                case FAV:
-                    jtxStatus.setText("Режим " + modeNames[ledMode - 1] + "(" + ledMode + ")" + " установлен стартовым режимом");
+                case WS2812B.FAV:
+                    jtxStatus.setText("Режим " + WS2812B.modeNames[currentLedMode - 1] + "(" + currentLedMode + ")" + " установлен стартовым режимом");
                     break;
 
-                case ACT_DEACT_MODE:
+                case WS2812B.ACT_DEACT_MODE:
                     boolean actDeactResult;
 
                     actDeactResult = recivedData[2] == 1;
-                    jtxStatus.setText("Режим " + modeNames[recivedData[1]] + "(" + recivedData[1] + ") " + "Установлен в значение - " + actDeactResult);
+                    jtxStatus.setText("Режим " + WS2812B.modeNames[recivedData[1]] + "(" + recivedData[1] + ") " + "Установлен в значение - " + actDeactResult);
 
                     readyToSaveSet = true;
                     break;
 
-                case SET_AUTO:
-                    if(recivedData[1] == 1){
+                case WS2812B.SET_AUTO:
+                    if (recivedData[1] == 1) {
                         jtxStatus.setText("Авторежим включен!");
-                    }
-                    else{
+                    } else {
                         jtxStatus.setText("Авторежим выключен!");
                     }
 
                     readyToSaveSet = true;
                     break;
 
-                case SET_COLOR:
+                case WS2812B.SET_COLOR:
                     lblCurModeName.setText("Произвольный цвет");
                     lblCurNumOfModes.setText("");
                     speed.setEnabled(false);
                     jtxStatus.setText("Цвет ленты установлен в R: " + recivedData[1] + ", G: " + recivedData[2] + ", B: " + recivedData[3]);
+                    // chkModesList[prevLedMode - 1].setBackground(new Color(235, 235 ,235));
+                    chkModesList[prevLedMode - 1].setForeground(colorsCheckBoxesInactive);
                     break;
 
-                case SET_BRIGHT:
+                case WS2812B.SET_BRIGHT:
                     maxBright = recivedData[1];
                     brightness.setValue(maxBright);
                     jtxStatus.setText("Яркость установлена в значение " + maxBright + " единиц");
                     readyToSaveSet = true;
                     break;
 
-                case SET_SPEED:
-                    if (recivedData[1] > 0){
-                       jtxStatus.setText("Скорость режима "+ modeNames[ledMode - 1] + "(" + ledMode + ") " + "установлена в значение - " + recivedData[1]);
+                case WS2812B.SET_SPEED:
+                    if (recivedData[1] > 0) {
+                        jtxStatus.setText("Скорость режима " + WS2812B.modeNames[currentLedMode - 1] + "(" + currentLedMode + ") " + "установлена в значение - " + recivedData[1]);
                     }
                     break;
 
-                case SAVE_SETTINGS:
-                    if(recivedData[1] > 0){
+                case WS2812B.SAVE_SETTINGS:
+                    if (recivedData[1] > 0) {
                         readyToSaveSet = false;
                         jtxStatus.setText("Данные сохранены!");
                     }
                     break;
             }
-        }catch (ArrayIndexOutOfBoundsException ae){
+        } catch (ArrayIndexOutOfBoundsException ae) {
             ae.printStackTrace();
         }
 
         btSaveSettings.setEnabled(readyToSaveSet);
-
-    }
-
-    //Инициализация ГПИ начальными значениями, полученными от дуины
-    private void initializeGUI(int[] recivedData) throws  ArrayIndexOutOfBoundsException{
-        //Вывод системной информации
-        jtxStatus.setText("Подключено к " + Main.com + " на скорости " + Main.baudRate);
-        jtxStatus.setBackground(Color.GREEN);
-
-        //Заполнение переменных полученными от ардуины данными
-        int indx1 = 0;
-        try {
-            ledMode = recivedData[1];
-            maxBright = recivedData[2];
-            autoMode = recivedData[3];
-            thisdelay = recivedData[4];
-            for (int indx2 = 5; indx2 < 54; indx2++) {
-                ledModes[indx1] = recivedData[indx2];
-                indx1++;
-            }
-        }catch (ArrayIndexOutOfBoundsException ae){
-            ae.printStackTrace();
-        }
-        //Применение настроек - установка состояния интерфейса в зависимости от состояния ленты
-        if (ledMode > 0) {
-            btOnOff.setSelected(true);
-            enableAll();
-        }
-        else{
-            btOnOff.setSelected(false);
-            disableAll();
-        }
-
-        //Обновление лейблов с именами режимов и порядковым номером
-            lblCurModeName.setText(modeNames[ledMode - 1]);
-            lblCurNumOfModes.setText(ledMode + "/" + modesCount);
-
-        //Установка галочки для режима "Авто" если этот режим включён в Ардуино
-        if(autoMode == 1){
-            chkAutoMode.setSelected(true);
-        }
-
-        //Установка значения яркости
-        brightness.setValue(maxBright);
-        for(int i = 0; i < modesCount; i++){
-            if(ledModes[i] == 1){
-                chkModesList[i].setSelected(true);
-            }
-        }
-
-        //Установка флага готовности к изменению основного списка режимов
-        readyActDeactMode = true;
     }
 
     //Метод для отключения всех компонентов при первом запуске и при нажатии на кнопку "ВЫКЛ"
-    private void disableAll(){
-        //Если нет подключения, то отключаем все компоненты, включаем компоненты подключения
-        if (!Main.isConnected) {
-            btConnect.setEnabled(true);
-            combCom.setEnabled(true);
-            combBaud.setEnabled(true);
-            btDisconnect.setEnabled(false);
-            btOnOff.setEnabled(false);
-        }
-
-        btOnOff.setEnabled(true);
+    private void disableAll(boolean controlElementEnabled) {
+        btConnect.setEnabled(controlElementEnabled);
+        combCom.setEnabled(controlElementEnabled);
+        combBaud.setEnabled(controlElementEnabled);
+        btDisconnect.setEnabled(!controlElementEnabled);
+        btOnOff.setEnabled(false);
         lblCurModeName.setEnabled(false);
         lblCurNumOfModes.setEnabled(false);
         btPrev.setEnabled(false);
@@ -848,7 +777,6 @@ public class MainFrame {
         btNext.setEnabled(false);
         btAddToFav.setEnabled(false);
         btSaveSettings.setEnabled(false);
-
         //Нижняя панель
         chkAutoMode.setEnabled(false);
         btColorChooser.setEnabled(false);
@@ -858,21 +786,27 @@ public class MainFrame {
         speed.setEnabled(false);
 
         //Центральная панель
-        for (int i = 0; i < modesCount; i++){
+        for (int i = 0; i < modesCount; i++) {
             chkModesList[i].setEnabled(false);
         }
 
-        readyActDeactMode = false;
+//        chkModesList[0].addChangeListener(new ChangeListener() {
+//            @Override
+//            public void stateChanged(ChangeEvent e) {
+//                chkModesList[0].
+//            }
+//        });
 
+        for (byte i = 0; i < chkModesList.length; i++) {
+            chkModesList[i].removeItemListener(itemsChangeListener);
+        }
         jtxStatus.setBackground(Color.WHITE);
-
     }
 
     //Метод для включения всех компонентов при удачном получении настроек и при нажатии на кнопку "ВКЛ"
-    private void enableAll(){
+    private void enableAll() {
         //Верхняя панель
         btDisconnect.setEnabled(true);
-
         //Панель управления
         btOnOff.setEnabled(true);
         lblCurModeName.setEnabled(true);
@@ -881,8 +815,7 @@ public class MainFrame {
         btPause.setEnabled(true);
         btNext.setEnabled(true);
         btAddToFav.setEnabled(true);
-        if(readyToSaveSet) btSaveSettings.setEnabled(true);
-
+        if (readyToSaveSet) btSaveSettings.setEnabled(true);
         //Нижняя панель
         chkAutoMode.setEnabled(true);
         btColorChooser.setEnabled(true);
@@ -891,12 +824,77 @@ public class MainFrame {
         brightness.setEnabled(true);
         speed.setEnabled(true);
 
+        for (byte i = 0; i < chkModesList.length; i++) {
+            chkModesList[i].addItemListener(itemsChangeListener);
+        }
+
         //Центральная панель
-        for (int i = 0; i < modesCount; i++){
+        for (int i = 0; i < modesCount; i++) {
             chkModesList[i].setEnabled(true);
         }
+    }
+
+    @Override
+    public void stateChanged(ChangeEvent e) {
+        Color newColor = colorChooser.getColor();
+        int r = newColor.getRed();
+        int g = newColor.getGreen();
+        int b = newColor.getBlue();
+        serialPortController.sendMessage(WS2812B.SET_COLOR, r, g, b);
+    }
+
+    //SerialPort Events
+    @Override
+    public void onSerialPortConnected(String port, int baudRate) {
+        combCom.removeMouseListener(comMouseListener);
+        btConnect.setEnabled(false);
+        combCom.setEnabled(false);
+        combBaud.setEnabled(false);
+        serialPortController.sendMessage(WS2812B.CONNECT);
+        new InitialDataKeeper().start();
+    }
+
+    @Override
+    public void onSerialPortFailedToConnect(String port, int baudRate, Exception e) {
+//        JOptionPane.showMessageDialog(this, "COM: " + port + " Baud Rate: " + baudRate + "\nВозможно порт уже занят или недоступен для подключения", "Ошибка подключения!", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(this, e.getMessage(), "Ошибка подключения!", JOptionPane.ERROR_MESSAGE);
+        btConnect.setEnabled(true);
+        combCom.setEnabled(true);
+        combBaud.setEnabled(true);
+    }
+
+    @Override
+    public void onSerialPortClosed(String port) {
+        combCom.addMouseListener(comMouseListener);
+        isInitialDataReceived = false;
+        disableAll(true);
+    }
+
+    @Override
+    public void onSerialPortFailedToClose(String port, Exception e) {
+        JOptionPane.showMessageDialog(this, e.getMessage(), "Ошибка!", JOptionPane.ERROR_MESSAGE);
+    }
+
+    @Override
+    public void onSerialPortDataSent(int... message) {
 
     }
 
+    @Override
+    public void onSerialPortDataReceived(int[] data) {
+        syncGUI(data);
+    }
+
+    @Override
+    public void onInitialDataReceived(int[] data) {
+        isInitialDataReceived = true;
+        initializeGUI(data);
+        enableAll();
+    }
+
+    @Override
+    public void onException(Exception e) {
+        e.printStackTrace();
+    }
 }
 
