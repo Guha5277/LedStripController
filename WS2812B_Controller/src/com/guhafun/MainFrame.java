@@ -97,7 +97,7 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
 
     private void setupUI() {
         //Получаем список портов, добавляем его в выпадающий список
-        String[] comPorts = SerialPortList.getPortNames();
+        String[] comPorts = serialPortController.getSerialPortList();
         combCom = new JComboBox<>(comPorts);
         combCom.setSelectedIndex(comPorts.length - 1);
         combBaud = new JComboBox<>(serialPortController.getBaudRateList());
@@ -334,7 +334,7 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
         speed.setPaintLabels(true);
         speed.setSnapToTicks(true);
         speed.setPreferredSize(new Dimension(160, 65));
-        speed.addMouseListener(new SpeedMouseListener());
+        speed.addChangeListener(new SpeedChangeListener());
 
         //Добавляем компоненты на панель
         setUpPanel.add(chkAutoMode, contSettings1);
@@ -421,7 +421,7 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
             switch (code) {
                 case "connect":
                     if (combCom.getSelectedItem() == null) {
-                        JOptionPane.showMessageDialog(MainFrame.this, "Нет доступных устройств для подключения!\nПроверьте правильность подключения и повторите попытку", "Ошибка!", JOptionPane.WARNING_MESSAGE);
+                        showErrorMessage("Нет доступных устройств для подключения!\nПроверьте правильность подключения и повторите попытку");
                     } else {
                         btConnect.setEnabled(false);
                         combCom.setEnabled(false);
@@ -467,8 +467,8 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
         public void itemStateChanged(ItemEvent e) {
             CustomCheckBox checkBox = (CustomCheckBox) e.getSource();
             int index = checkBox.getIndex();
-            byte actDeactValue = chkModesList[index].isSelected() ? (byte) 1 : 0;
-            serialPortController.sendMessage(WS2812B.ACT_DEACT_MODE, index, actDeactValue);
+            byte modeState = chkModesList[index].isSelected() ? (byte) 1 : 0;
+            serialPortController.sendMessage(WS2812B.MODE_STATE, index, modeState);
         }
     }
 
@@ -476,8 +476,6 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
     private class BrightnessChangeListener implements ChangeListener {
         long timePassed = 0;
         long lastTimeCalled = System.currentTimeMillis();
-        int counter = 0;
-        int counter2 = 0;
 
         @Override
         public void stateChanged(ChangeEvent e) {
@@ -485,7 +483,6 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
             lastTimeCalled = System.currentTimeMillis();
 
             if (timePassed > 10) {
-                System.out.println(++counter);
                 maxBright = brightness.getValue();
                 serialPortController.sendMessage(WS2812B.SET_BRIGHT, maxBright);
                 timePassed = 0L;
@@ -493,33 +490,21 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
         }
     }
 
-    //Слушатель для слайдера скорости
-    private class SpeedMouseListener implements MouseListener {
-        @Override
-        public void mouseEntered(MouseEvent e) {
-        }
+    private class SpeedChangeListener implements ChangeListener {
+        long timePassed = 0;
+        long lastTimeCalled = System.currentTimeMillis();
 
         @Override
-        public void mouseClicked(MouseEvent e) {
-        }
+        public void stateChanged(ChangeEvent e) {
+            timePassed += System.currentTimeMillis() - lastTimeCalled;
+            lastTimeCalled = System.currentTimeMillis();
 
-        @Override
-        public void mouseReleased(MouseEvent e) {
-            //Скорость регулируется путём изменения перменной задержки - чем меньше её значение, тем быстрее работает эффект
-            //Считываем значение слайдера (0-15), каждое значение соответствует своей ячейке в массиве hashSpeed
-            int arrayIndex = speed.getValue();
-            int thisdelayChanged = (int) (delay / WS2812B.speedMultiplier[arrayIndex]);
-
-            System.out.println(thisdelayChanged);
-            serialPortController.sendMessage(WS2812B.SET_SPEED, thisdelayChanged);
-        }
-
-        @Override
-        public void mouseExited(MouseEvent e) {
-        }
-
-        @Override
-        public void mousePressed(MouseEvent e) {
+            if (timePassed > 10) {
+                int arrayIndex = speed.getValue();
+                int newDelay = (int) (delay / WS2812B.speedMultiplier[arrayIndex]);
+                serialPortController.sendMessage(WS2812B.SET_SPEED, newDelay);
+                timePassed = 0L;
+            }
         }
     }
 
@@ -527,13 +512,7 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
     private class AutoModeItemListener implements ItemListener {
         @Override
         public void itemStateChanged(ItemEvent e) {
-            boolean currentState = chkAutoMode.isSelected();
-            int value;
-            if (currentState) {
-                value = 1;
-            } else {
-                value = 0;
-            }
+            int value = chkAutoMode.isSelected() ? 1 : 0;
             serialPortController.sendMessage(WS2812B.SET_AUTO, value);
         }
     }
@@ -552,7 +531,7 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    MainFrame.this.onException(e);
                 }
                 if (isInitialDataReceived) return;
                 serialPortController.sendMessage(WS2812B.CONNECT);
@@ -562,29 +541,29 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
     }
 
     private void failedToGetInitialData() {
-        JOptionPane.showMessageDialog(this, "Не могу инициализировать данные!\nПроверьте правильность скетча и настройки подключения (скорость)!", "Ошибка", JOptionPane.ERROR_MESSAGE);
+        showErrorMessage("Не могу инициализировать данные!\nПроверьте правильность скетча и настройки подключения (скорость)!");
         serialPortController.disconnect();
     }
 
-    //Инициализация ГПИ начальными значениями, полученными от дуины
+    //Инициализация ГПИ начальными значениями, полученными от микроконтроллера
     private void initializeGUI(int[] receivedData) {
         //Вывод системной информации
         jtxStatus.setText("Подключено к " + combCom.getSelectedItem() + " на скорости " + combBaud.getSelectedItem());
         jtxStatus.setBackground(Color.GREEN);
 
         //Заполнение переменных полученными от ардуины данными
-        int indx1 = 0;
+        int index = 0;
         try {
             currentLedMode = receivedData[1];
             maxBright = receivedData[2];
             autoMode = receivedData[3];
             delay = receivedData[4];
-            for (int indx2 = 5; indx2 < 54; indx2++) {
-                ledModes[indx1] = receivedData[indx2];
-                indx1++;
+            for (int arrIndex = 5; arrIndex < 54; arrIndex++) {
+                ledModes[index] = receivedData[arrIndex];
+                index++;
             }
         } catch (ArrayIndexOutOfBoundsException ae) {
-            ae.printStackTrace();
+            this.onException(ae);
         }
         //Обновление лейблов с именами режимов и порядковым номером
         if (currentLedMode >= 50) {
@@ -594,7 +573,6 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
             lblCurModeName.setText("Лента выключена!");
             lblCurNumOfModes.setText("");
         } else {
-//            chkModesList[currentLedMode - 1].setBackground(Color.GREEN);
             chkModesList[currentLedMode - 1].setForeground(colorsCheckBoxesActive);
             prevLedMode = currentLedMode;
             lblCurModeName.setText(WS2812B.modeNames[currentLedMode - 1]);
@@ -613,7 +591,6 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
         for (int i = 0; i < modesCount; i++) {
             if (ledModes[i] == 1) {
                 chkModesList[i].setSelected(true);
-//                chkModesList[i].addItemListener(new ModesListItemListener((byte)i));
             }
         }
 
@@ -626,7 +603,6 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
             disableAll(false);
         }
 
-        //Установка флага готовности к изменению основного списка режимов
         int r = 0;
         int b = 0;
         while (r != 238) {
@@ -636,13 +612,13 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                this.onException(e);
             }
         }
     }
 
-    //Метод, который обновляет ГПИ в соответствии с принятыми данными от ардуины
-    private void syncGUI(int... receivedData) throws ArrayIndexOutOfBoundsException {
+    //Метод, который обновляет ГПИ в соответствии с принятыми данными от микроконтроллера
+    private void syncGUI(int... receivedData) {
         jtxStatus.setBackground(Color.WHITE);
         try {
             switch (receivedData[0]) {
@@ -667,9 +643,7 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
                     delay = receivedData[2];
                     lblCurModeName.setText(WS2812B.modeNames[currentLedMode - 1]);
                     lblCurNumOfModes.setText(currentLedMode + "/" + modesCount);
-                    //chkModesList[currentLedMode - 1].setBackground(Color.GREEN);
                     chkModesList[currentLedMode - 1].setForeground(colorsCheckBoxesActive);
-//                    chkModesList[prevLedMode - 1].setBackground(new Color(235, 235, 235));
                     chkModesList[prevLedMode - 1].setForeground(colorsCheckBoxesInactive);
                     prevLedMode = currentLedMode;
 
@@ -705,11 +679,11 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
                     jtxStatus.setText("Режим " + WS2812B.modeNames[currentLedMode - 1] + "(" + currentLedMode + ")" + " установлен стартовым режимом");
                     break;
 
-                case WS2812B.ACT_DEACT_MODE:
-                    boolean actDeactResult;
+                case WS2812B.MODE_STATE:
+                    boolean modeState;
 
-                    actDeactResult = receivedData[2] == 1;
-                    jtxStatus.setText("Режим " + WS2812B.modeNames[receivedData[1]] + "(" + receivedData[1] + ") " + "Установлен в значение - " + actDeactResult);
+                    modeState = receivedData[2] == 1;
+                    jtxStatus.setText("Режим " + WS2812B.modeNames[receivedData[1]] + "(" + receivedData[1] + ") " + "Установлен в значение - " + modeState);
 
                     readyToSaveSet = true;
                     break;
@@ -729,7 +703,6 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
                     lblCurNumOfModes.setText("");
                     speed.setEnabled(false);
                     jtxStatus.setText("Цвет ленты установлен в R: " + receivedData[1] + ", G: " + receivedData[2] + ", B: " + receivedData[3]);
-                    // chkModesList[prevLedMode - 1].setBackground(new Color(235, 235 ,235));
                     chkModesList[prevLedMode - 1].setForeground(colorsCheckBoxesInactive);
                     break;
 
@@ -754,18 +727,17 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
                     break;
             }
         } catch (ArrayIndexOutOfBoundsException ae) {
-            ae.printStackTrace();
+            this.onException(ae);
         }
-
         btSaveSettings.setEnabled(readyToSaveSet);
     }
 
     //Метод для отключения всех компонентов при первом запуске и при нажатии на кнопку "ВЫКЛ"
-    private void disableAll(boolean controlElementEnabled) {
-        btConnect.setEnabled(controlElementEnabled);
-        combCom.setEnabled(controlElementEnabled);
-        combBaud.setEnabled(controlElementEnabled);
-        btDisconnect.setEnabled(!controlElementEnabled);
+    private void disableAll(boolean connectElementsState) {
+        btConnect.setEnabled(connectElementsState);
+        combCom.setEnabled(connectElementsState);
+        combBaud.setEnabled(connectElementsState);
+        btDisconnect.setEnabled(!connectElementsState);
         btOnOff.setEnabled(false);
         lblCurModeName.setEnabled(false);
         lblCurNumOfModes.setEnabled(false);
@@ -781,18 +753,10 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
         lblSpeed.setEnabled(false);
         brightness.setEnabled(false);
         speed.setEnabled(false);
-
         //Центральная панель
         for (int i = 0; i < modesCount; i++) {
             chkModesList[i].setEnabled(false);
         }
-
-//        chkModesList[0].addChangeListener(new ChangeListener() {
-//            @Override
-//            public void stateChanged(ChangeEvent e) {
-//                chkModesList[0].
-//            }
-//        });
 
         for (byte i = 0; i < chkModesList.length; i++) {
             chkModesList[i].removeItemListener(itemsChangeListener);
@@ -854,8 +818,7 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
 
     @Override
     public void onSerialPortFailedToConnect(String port, int baudRate, Exception e) {
-//        JOptionPane.showMessageDialog(this, "COM: " + port + " Baud Rate: " + baudRate + "\nВозможно порт уже занят или недоступен для подключения", "Ошибка подключения!", JOptionPane.ERROR_MESSAGE);
-        JOptionPane.showMessageDialog(this, e.getMessage(), "Ошибка подключения!", JOptionPane.ERROR_MESSAGE);
+        showErrorMessage("Ошибка подключения: " + e.getMessage());
         btConnect.setEnabled(true);
         combCom.setEnabled(true);
         combBaud.setEnabled(true);
@@ -870,12 +833,8 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
 
     @Override
     public void onSerialPortFailedToClose(String port, Exception e) {
-        JOptionPane.showMessageDialog(this, e.getMessage(), "Ошибка!", JOptionPane.ERROR_MESSAGE);
-    }
-
-    @Override
-    public void onSerialPortDataSent(int... message) {
-
+        showErrorMessage(e.getMessage());
+        disableAll(true);
     }
 
     @Override
@@ -891,8 +850,18 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
     }
 
     @Override
+    public void onFailedToSendData() {
+        showErrorMessage("Соединение потеряно!");
+        disableAll(true);
+    }
+
+    @Override
     public void onException(Exception e) {
-        e.printStackTrace();
+        showErrorMessage(e.getMessage());
+    }
+
+    private void showErrorMessage(String body) {
+        JOptionPane.showMessageDialog(this, body, "Ошибка", JOptionPane.ERROR_MESSAGE);
     }
 }
 
