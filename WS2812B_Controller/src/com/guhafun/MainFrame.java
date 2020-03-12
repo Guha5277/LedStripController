@@ -565,6 +565,12 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
         } catch (ArrayIndexOutOfBoundsException ae) {
             this.onException(ae);
         }
+
+        //Сбрасываем цвет текста у названия режимов
+        for (JCheckBox box : chkModesList){
+            box.setForeground(colorsCheckBoxesInactive);
+        }
+
         //Обновление лейблов с именами режимов и порядковым номером
         if (currentLedMode >= 50) {
             lblCurModeName.setText("Произвольный цвет");
