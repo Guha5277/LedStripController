@@ -566,7 +566,7 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
             this.onException(ae);
         }
 
-        //Сбрасываем цвет текста у названия режимов
+        //Сбрасываем цвет текста режимов в плейлисте
         for (JCheckBox box : chkModesList){
             box.setForeground(colorsCheckBoxesInactive);
         }
