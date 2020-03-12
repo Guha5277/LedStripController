@@ -603,18 +603,7 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
             disableAll(false);
         }
 
-        int r = 0;
-        int b = 0;
-        while (r != 238) {
-            jtxStatus.setBackground(new Color(r, 238, b));
-            r++;
-            b++;
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                this.onException(e);
-            }
-        }
+        jtxStatus.setBackground(new Color(238, 238, 238));
     }
 
     //Метод, который обновляет ГПИ в соответствии с принятыми данными от микроконтроллера
@@ -864,4 +853,3 @@ class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
         JOptionPane.showMessageDialog(this, body, "Ошибка", JOptionPane.ERROR_MESSAGE);
     }
 }
-

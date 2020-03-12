@@ -33,8 +33,10 @@ public class SerialPortController implements SerialPortEventListener {
     synchronized void sendMessage(int... message) {
         try {
             serialPort.writeIntArray(message);
+            int eventMask = serialPort.getEventsMask();
+            if (eventMask == -1) listener.onFailedToSendData();
         } catch (SerialPortException e) {
-            listener.onFailedToSendData();
+            listener.onException(e);
         }
     }
 
