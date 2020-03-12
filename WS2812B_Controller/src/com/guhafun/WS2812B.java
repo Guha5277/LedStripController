@@ -7,7 +7,7 @@ public class WS2812B {
     static final int NEXT = 4;
     static final int PAUSE = 5;
     static final int FAV = 6;
-    static final int ACT_DEACT_MODE = 7;
+    static final int MODE_STATE = 7;
     static final int SET_AUTO = 8;
     static final int SET_COLOR = 9;
     static final int SET_BRIGHT = 10;
