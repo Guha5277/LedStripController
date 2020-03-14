@@ -1,7 +1,6 @@
 package com.guhafun;
 
 import jssc.SerialPortList;
-
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -9,9 +8,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.Hashtable;
 
-
-/*TODO
- * 3. Рефакторинг кода, перенос на новый тип взаимодействия ГИ и класса работающего с портом (реалзиация интерфейса)*/
 class MainFrame extends JFrame implements SerialPortListener, ChangeListener {
     private final SerialPortController serialPortController;
     private final CombComMouseListener comMouseListener;
